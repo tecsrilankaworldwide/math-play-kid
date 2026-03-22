@@ -1,0 +1,101 @@
+{
+  "theme": "light",
+  "typography": {
+    "heading_font": "Fredoka, sans-serif",
+    "body_font": "Nunito, sans-serif",
+    "sizing": {
+      "h1": "text-5xl md:text-7xl font-black tracking-tight",
+      "h2": "text-4xl md:text-6xl font-extrabold",
+      "h3": "text-3xl md:text-4xl font-bold",
+      "body": "text-xl md:text-2xl font-bold",
+      "labels": "text-xl font-black uppercase tracking-[0.1em]"
+    }
+  },
+  "colors": {
+    "primary": "#FFD166",
+    "primary_shadow": "#E5B64E",
+    "secondary": "#118AB2",
+    "secondary_shadow": "#0B6B8A",
+    "accent_pink": "#EF476F",
+    "accent_pink_shadow": "#CC3354",
+    "accent_green": "#06D6A0",
+    "accent_green_shadow": "#04B384",
+    "background": "#FCF9F2",
+    "surface": "#FFFFFF",
+    "text": "#073B4C",
+    "text_muted": "#5C7D8A",
+    "warning": "#F78C6B",
+    "warning_shadow": "#D66A4A"
+  },
+  "visual_enhancers": {
+    "surface_strategy": "Clay/Tactile UI - Elements should feel like physical, chunky, pushable wooden toys or plastic blocks.",
+    "button_styles": {
+      "base": "relative rounded-[2rem] font-black transition-all active:translate-y-2 select-none flex items-center justify-center gap-3 border-4 border-white/20",
+      "primary": "bg-[#FFD166] text-[#073B4C] shadow-[0_8px_0_#E5B64E] hover:brightness-105 active:shadow-[0_0px_0_#E5B64E]",
+      "secondary": "bg-[#118AB2] text-white shadow-[0_8px_0_#0B6B8A] hover:brightness-105 active:shadow-[0_0px_0_#0B6B8A]",
+      "pink": "bg-[#EF476F] text-white shadow-[0_8px_0_#CC3354] hover:brightness-105 active:shadow-[0_0px_0_#CC3354]",
+      "green": "bg-[#06D6A0] text-[#073B4C] shadow-[0_8px_0_#04B384] hover:brightness-105 active:shadow-[0_0px_0_#04B384]"
+    },
+    "card_styles": "bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_16px_40px_rgba(7,59,76,0.06)] border-4 border-white overflow-hidden relative",
+    "borders": "Avoid thin 1px sharp borders. Use thick 4px-8px strokes (white or tinted) or rely entirely on colored clay shadows for structure.",
+    "decorations": "Backgrounds should feature subtle, oversized SVG geometric shapes (circles, wavy blobs, stars) with 5-10% opacity floating around to break up the flat cream background."
+  },
+  "grids": {
+    "dashboard_bento": "grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8",
+    "spans": {
+      "hero_card": "col-span-1 md:col-span-12 lg:col-span-8 row-span-2",
+      "square_card": "col-span-1 md:col-span-6 lg:col-span-4 row-span-1"
+    }
+  },
+  "layouts": {
+    "container": "max-w-7xl mx-auto px-6 py-8 md:px-12 md:py-16",
+    "navigation": "Bottom-heavy navigation for tiny hands. Top bar should only contain a massive 'Back' arrow and current Star/Badge count. No complex hamburger menus."
+  },
+  "motion": {
+    "entrance": "Staggered spring entrances using framer-motion: initial={{ scale: 0.5, opacity: 0, rotate: -5 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} transition={{ type: 'spring', bounce: 0.6, duration: 0.8 }}",
+    "hover": "Playful scale up (scale: 1.05) and slight rotation (rotate: 2deg).",
+    "tap": "Scale down (0.95) and translate-y to simulate pushing a physical block.",
+    "feedback_success": "Massive bounce + glow. Use react-confetti for module completion.",
+    "feedback_error": "Gentle horizontal wiggle (x: [-10, 10, -10, 10, 0]) to indicate 'try again' rather than a harsh error."
+  },
+  "accessibility": {
+    "touch_targets": "Massive. Minimum 64x64 pixels. The entire card should be clickable, not just the button inside it.",
+    "contrast": "Deep indigo text (#073B4C) on yellow or white backgrounds ensures high APCA readability for developing eyes.",
+    "feedback": "Visual feedback is non-negotiable. Every tap MUST have a visual reaction.",
+    "data_testid": "Required on all interactive elements. Example: data-testid='module-counting-button'"
+  },
+  "media": {
+    "icons": "Use lucide-react. Standardize at size 48 to 80, with strokeWidth 3 or 4. Often nest them inside a circular contrasting background to make them 'pop'.",
+    "images": "Prioritize high-quality 3D renders or vector graphics. UI must not rely on reading."
+  },
+  "3d_libraries": {
+    "recommendation": "Use framer-motion for all UI interactivity. Use react-confetti for rewards. Complex WebGL/Three.js is overkill and distracts from the core learning loops; stick to 2.5D tactile clay shadows."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1667753147067-87f4b81179c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwzfHxjdXRlJTIwZnJpZW5kbHklMjBhbmltYWwlMjBtYXNjb3QlMjAzZCUyMHJlbmRlcnxlbnwwfHx8fDE3NzQyMDQ1NjR8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Green toy dinosaur - Use as the app's friendly mascot on the home page and as a visual guide or cheerleader inside the learning modules.",
+      "category": "mascot"
+    }
+  ],
+  "component_path": "/app/frontend/src/components/ui/",
+  "instructions_to_main_agent": [
+    "1. Setup Tailwind with the custom colors: primary, secondary, accent_pink, accent_green, background, and text.",
+    "2. Add Google Fonts 'Fredoka' and 'Nunito' to the global CSS and configure them in Tailwind config (sans).",
+    "3. Implement the 'Clay UI' button style. Use raw HTML/Tailwind for game modules. Avoid standard Shadcn Cards or Buttons, as they are too corporate/sterile for a 5-year-old. Create custom tactile buttons with thick colored bottom shadows (e.g. shadow-[0_8px_0_#E5B64E]) that reduce to 0px on active/tap state to simulate a real button press.",
+    "4. Text MUST be large, minimal, and friendly. Avoid standard paragraphs. Use icons + short labels (e.g., 'Play!', 'Numbers').",
+    "5. For the games (counting, shapes): Create large draggable or clickable zones. Use framer-motion for success/failure feedback (wiggle on wrong, bounce + glow on correct).",
+    "6. Build a Progress/Rewards page utilizing SVGs (Lucide 'Star' or 'Award') for stars/badges. When a user earns a star, trigger `react-confetti`.",
+    "7. Use lucide-react for icons, but make them massive (size 48-64) with strokeWidth 3 or 4.",
+    "8. The app background should be the soft cream (#FCF9F2). Optionally, add scattered faint SVG shapes (circles, triangles) with low opacity to make it feel like a colorful playroom."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Create depth through layered design elements with z-index hierarchy and clay-like shadows.",
+    "Do not center align the App container globally (.App { text-align: center; } is FORBIDDEN).",
+    "All interactive elements must have micro-animations (hover/active states).",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Never use generic AI assistant emoji characters for icons. Use lucide-react.",
+    "Components MUST use named exports, Pages MUST use default exports.",
+    "All interactive and key informational elements MUST include a 'data-testid' attribute to facilitate robust automated testing."
+  ]
+}
