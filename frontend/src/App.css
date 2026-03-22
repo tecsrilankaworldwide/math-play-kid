@@ -1,34 +1,125 @@
-.App-logo {
-    height: 40vmin;
+/* Background Decorations */
+.floating-shape {
+    position: fixed;
+    opacity: 0.08;
     pointer-events: none;
+    z-index: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
+.shape-circle-1 {
+    top: 10%;
+    left: 5%;
+    width: 200px;
+    height: 200px;
+    background: #FFD166;
+    border-radius: 50%;
+}
+
+.shape-circle-2 {
+    top: 60%;
+    right: 10%;
+    width: 150px;
+    height: 150px;
+    background: #118AB2;
+    border-radius: 50%;
+}
+
+.shape-star {
+    top: 30%;
+    right: 5%;
+    width: 100px;
+    height: 100px;
+    background: #EF476F;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.shape-triangle {
+    bottom: 15%;
+    left: 10%;
+    width: 120px;
+    height: 120px;
+    background: #06D6A0;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.shape-blob {
+    bottom: 40%;
+    left: 50%;
+    width: 180px;
+    height: 180px;
+    background: #F78C6B;
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+}
+
+/* Module Cards Grid */
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .module-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
     }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
+/* Object Display Grid */
+.objects-grid {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Progress Stars Container */
+.stars-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Mascot Animation */
+@keyframes mascot-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.mascot-bounce {
+    animation: mascot-bounce 2s ease-in-out infinite;
+}
+
+/* Number Display */
+.number-display {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #073B4C;
+}
+
+@media (min-width: 768px) {
+    .number-display {
+        font-size: 12rem;
+    }
+}
+
+/* Shape Display */
+.shape-item {
+    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+    width: 100px;
+    height: 100px;
 }
 
-.App-link {
-    color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
+@media (min-width: 768px) {
+    .shape-item {
+        width: 140px;
+        height: 140px;
     }
 }
