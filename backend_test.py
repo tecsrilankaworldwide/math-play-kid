@@ -451,6 +451,144 @@ class MathPlaySubscriptionTester:
         
         return True
 
+    def test_csv_import(self):
+        """Test CSV import functionality"""
+        if not self.admin_token:
+            print("❌ No admin token available")
+            return False
+        
+        # Create test CSV content
+        csv_content = """question,option1,option2,option3,option4,correct_answer,visual_hint
+How many cats?,1,2,3,4,3,🐱🐱🐱
+What is 2 + 3?,4,5,6,7,5,
+Which shape is round?,Square,Triangle,Circle,Star,Circle,🔴"""
+        
+        # Test CSV import endpoint
+        try:
+            import tempfile
+            import os
+            
+            # Create temporary CSV file
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+                f.write(csv_content)
+                temp_file = f.name
+            
+            # Prepare multipart form data
+            headers = {'Authorization': f'Bearer {self.admin_token}'}
+            
+            with open(temp_file, 'rb') as f:
+                files = {'file': ('test.csv', f, 'text/csv')}
+                
+                # Make request without Content-Type header (requests will set it for multipart)
+                response = requests.post(
+                    f"{self.api_url}/admin/lessons/import-questions",
+                    files=files,
+                    headers=headers,
+                    timeout=10
+                )
+            
+            # Clean up temp file
+            os.unlink(temp_file)
+            
+            self.tests_run += 1
+            print(f"\n🔍 Testing CSV Import...")
+            print(f"   URL: {self.api_url}/admin/lessons/import-questions")
+            
+            if response.status_code == 200:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                
+                try:
+                    data = response.json()
+                    print(f"   Response: {json.dumps(data, indent=2)[:300]}...")
+                    
+                    # Validate response structure
+                    if 'success' in data and 'questions' in data and 'count' in data:
+                        if data['success'] and data['count'] == 3:
+                            print(f"✅ CSV import successful - {data['count']} questions imported")
+                            
+                            # Validate question structure
+                            for i, question in enumerate(data['questions']):
+                                required_fields = ['question', 'options', 'correct_answer']
+                                for field in required_fields:
+                                    if field not in question:
+                                        print(f"❌ Missing field in imported question {i+1}: {field}")
+                                        return False
+                                
+                                if len(question['options']) != 4:
+                                    print(f"❌ Question {i+1} should have 4 options")
+                                    return False
+                                
+                                if question['correct_answer'] not in question['options']:
+                                    print(f"❌ Question {i+1} correct answer not in options")
+                                    return False
+                            
+                            print(f"✅ All imported questions have valid structure")
+                            return True
+                        else:
+                            print(f"❌ CSV import failed or wrong count: expected 3, got {data.get('count', 0)}")
+                            return False
+                    else:
+                        print(f"❌ CSV import response missing required fields")
+                        return False
+                        
+                except Exception as e:
+                    print(f"❌ Failed to parse CSV import response: {e}")
+                    return False
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                print(f"   Response: {response.text[:300]}...")
+                self.failed_tests.append({
+                    "test": "CSV Import",
+                    "expected": 200,
+                    "actual": response.status_code,
+                    "response": response.text[:300]
+                })
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            self.failed_tests.append({
+                "test": "CSV Import",
+                "error": str(e)
+            })
+            return False
+
+    def test_payment_approval_email(self):
+        """Test payment approval and email notification"""
+        if not self.admin_token or not self.user_token or not self.test_child_id:
+            print("❌ Missing required tokens or child ID for payment approval test")
+            return False
+        
+        # First create a manual payment
+        test_data = {
+            "child_id": self.test_child_id,
+            "plan_type": "monthly",
+            "age_category": "age_7",
+            "reference_number": "EMAIL_TEST_123"
+        }
+        headers = {'Authorization': f'Bearer {self.user_token}'}
+        success, payment_data = self.run_test("Create Payment for Email Test", "POST", "payments/manual", 200, test_data, headers)
+        
+        if not success or 'transaction_id' not in payment_data:
+            print("❌ Failed to create test payment")
+            return False
+        
+        transaction_id = payment_data['transaction_id']
+        print(f"✅ Test payment created with ID: {transaction_id}")
+        
+        # Now approve the payment (this should trigger email)
+        admin_headers = {'Authorization': f'Bearer {self.admin_token}'}
+        success, approval_data = self.run_test("Approve Payment (Email Test)", "PUT", f"admin/payments/{transaction_id}/approve", 200, headers=admin_headers)
+        
+        if success:
+            print(f"✅ Payment approved successfully - Email notification should be sent")
+            print(f"   Note: Email sending depends on RESEND_API_KEY configuration")
+            return True
+        else:
+            print(f"❌ Payment approval failed")
+            return False
+
 def main():
     print("🚀 Starting MathPlay Kids Subscription Platform API Tests")
     print("=" * 60)
@@ -489,6 +627,12 @@ def main():
     
     print("\n📚 Testing Lesson Management...")
     tester.test_lesson_management()
+    
+    print("\n📄 Testing CSV Import...")
+    tester.test_csv_import()
+    
+    print("\n📧 Testing Email Notifications...")
+    tester.test_payment_approval_email()
     
     # Print final results
     print("\n" + "=" * 60)

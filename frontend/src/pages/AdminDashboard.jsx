@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { 
   Users, DollarSign, BookOpen, Check, X, LogOut, Clock, 
-  Plus, Edit, Trash2, Eye, EyeOff, Save, ChevronDown
+  Plus, Edit, Trash2, Save, Upload, Download, FileSpreadsheet
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -56,6 +56,10 @@ export default function AdminDashboard() {
     correct_answer: "",
     visual_hint: ""
   });
+  
+  // CSV Import
+  const fileInputRef = useRef(null);
+  const [csvImporting, setCsvImporting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !user.is_admin)) {
@@ -198,6 +202,63 @@ export default function AdminDashboard() {
     } catch (e) {
       toast.error("Failed to delete lesson");
     }
+  };
+
+  // CSV Import/Export Functions
+  const handleCsvImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setCsvImporting(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const res = await axios.post(`${API}/admin/lessons/import-questions`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      if (res.data.questions?.length > 0) {
+        setLessonForm(prev => ({
+          ...prev,
+          content: {
+            ...prev.content,
+            questions: [...(prev.content.questions || []), ...res.data.questions]
+          }
+        }));
+        toast.success(`Imported ${res.data.count} questions!`);
+        
+        if (res.data.errors?.length > 0) {
+          toast.warning(`${res.data.errors.length} rows had errors`);
+          console.log("Import errors:", res.data.errors);
+        }
+      } else {
+        toast.error("No valid questions found in CSV");
+      }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Failed to import CSV");
+    }
+    
+    setCsvImporting(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const downloadCsvTemplate = () => {
+    const template = "question,option1,option2,option3,option4,correct_answer,visual_hint\n" +
+      "How many apples?,1,2,3,4,3,🍎🍎🍎\n" +
+      "What is 2 + 2?,3,4,5,6,4,\n" +
+      "What shape is this?,Circle,Square,Triangle,Star,Circle,🔴";
+    
+    const blob = new Blob([template], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "questions_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Template downloaded!");
   };
 
   if (authLoading || loading) {
@@ -543,20 +604,44 @@ export default function AdminDashboard() {
 
               {/* Questions Section */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Lesson Questions</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Lesson Questions</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={downloadCsvTemplate}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      data-testid="download-template-button"
+                    >
+                      <Download size={16} /> Template
+                    </button>
+                    <label className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 cursor-pointer">
+                      <Upload size={16} /> {csvImporting ? "Importing..." : "Import CSV"}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleCsvImport}
+                        className="hidden"
+                        disabled={csvImporting}
+                        data-testid="csv-import-input"
+                      />
+                    </label>
+                  </div>
+                </div>
                 
                 {/* Existing Questions */}
                 {lessonForm.content.questions?.length > 0 && (
                   <div className="mb-4 space-y-2">
+                    <p className="text-sm text-gray-500 mb-2">{lessonForm.content.questions.length} questions added</p>
                     {lessonForm.content.questions.map((q, index) => (
                       <div key={q.id || index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{q.question}</p>
-                          <p className="text-sm text-gray-500">Answer: {q.correct_answer}</p>
+                        <div className="flex-1 min-w-0 mr-4">
+                          <p className="font-medium text-gray-900 truncate">{q.question}</p>
+                          <p className="text-sm text-gray-500">Answer: {q.correct_answer} {q.visual_hint && `| Hint: ${q.visual_hint}`}</p>
                         </div>
                         <button
                           onClick={() => removeQuestion(index)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 flex-shrink-0"
                         >
                           <Trash2 size={18} />
                         </button>

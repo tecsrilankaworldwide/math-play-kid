@@ -1,16 +1,18 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Star, Check, Users, Trophy, BookOpen, CreditCard, QrCode, ArrowRight } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
+import LanguageSelector from "../components/LanguageSelector";
 
 const PRICING = [
-  { id: "age_5_6", name: "Ages 5-6", monthly: 1, yearly: 5, color: "#FFD500", features: ["Counting 1-10", "Number Recognition", "Basic Shapes", "Fun Games"] },
-  { id: "age_7", name: "Age 7", monthly: 2, yearly: 7, color: "#00E676", features: ["Counting 1-15", "Addition & Subtraction", "More Shapes", "Quiz Mode"] },
-  { id: "age_8", name: "Age 8", monthly: 3, yearly: 10, color: "#0047FF", features: ["Advanced Counting", "Word Problems", "Geometry Intro", "Progress Tracking"] },
-  { id: "age_9", name: "Age 9", monthly: 4, yearly: 13, color: "#FF6B9D", features: ["Multiplication Basics", "Fractions Intro", "Logic Puzzles", "Achievements"] },
-  { id: "age_10", name: "Age 10", monthly: 5, yearly: 15, color: "#9B5DE5", features: ["All Operations", "Problem Solving", "Advanced Geometry", "Full Curriculum"] },
+  { id: "age_5_6", nameKey: "ages_5_6", monthly: 1, yearly: 5, color: "#FFD500", features: ["Counting 1-10", "Number Recognition", "Basic Shapes", "Fun Games"] },
+  { id: "age_7", nameKey: "age_7", monthly: 2, yearly: 7, color: "#00E676", features: ["Counting 1-15", "Addition & Subtraction", "More Shapes", "Quiz Mode"] },
+  { id: "age_8", nameKey: "age_8", monthly: 3, yearly: 10, color: "#0047FF", features: ["Advanced Counting", "Word Problems", "Geometry Intro", "Progress Tracking"] },
+  { id: "age_9", nameKey: "age_9", monthly: 4, yearly: 13, color: "#FF6B9D", features: ["Multiplication Basics", "Fractions Intro", "Logic Puzzles", "Achievements"] },
+  { id: "age_10", nameKey: "age_10", monthly: 5, yearly: 15, color: "#9B5DE5", features: ["All Operations", "Problem Solving", "Advanced Geometry", "Full Curriculum"] },
 ];
 
-const PricingCard = ({ plan, delay }) => (
+const PricingCard = ({ plan, delay, t }) => (
   <motion.div
     initial={{ opacity: 0, y: 30 }}
     animate={{ opacity: 1, y: 0 }}
@@ -19,13 +21,13 @@ const PricingCard = ({ plan, delay }) => (
     style={{ backgroundColor: plan.color }}
   >
     <div className="p-6">
-      <h3 className="text-2xl font-bold text-slate-900 font-kids">{plan.name}</h3>
+      <h3 className="text-2xl font-bold text-slate-900 font-kids">{t(plan.nameKey)}</h3>
       <div className="mt-4">
         <div className="flex items-baseline gap-1">
           <span className="text-4xl font-bold text-slate-900">${plan.monthly}</span>
-          <span className="text-slate-700">/month</span>
+          <span className="text-slate-700">{t("per_month")}</span>
         </div>
-        <div className="text-sm text-slate-700 mt-1">or ${plan.yearly}/year (save {Math.round((1 - plan.yearly / (plan.monthly * 12)) * 100)}%)</div>
+        <div className="text-sm text-slate-700 mt-1">or ${plan.yearly}{t("per_year")} (save {Math.round((1 - plan.yearly / (plan.monthly * 12)) * 100)}%)</div>
       </div>
       <ul className="mt-6 space-y-3">
         {plan.features.map((feature, i) => (
@@ -41,6 +43,7 @@ const PricingCard = ({ plan, delay }) => (
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-[#FDF8F5]">
@@ -55,7 +58,8 @@ export default function LandingPage() {
             >
               MathPlay<span className="text-[#0047FF]">Kids</span>
             </motion.h1>
-            <div className="flex gap-4">
+            <div className="flex items-center gap-4">
+              <LanguageSelector />
               <motion.button
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -64,7 +68,7 @@ export default function LandingPage() {
                 className="px-6 py-2 font-semibold text-slate-900 hover:text-[#0047FF] transition-colors"
                 data-testid="login-nav-button"
               >
-                Login
+                {t("login")}
               </motion.button>
               <motion.button
                 initial={{ opacity: 0 }}
@@ -74,7 +78,7 @@ export default function LandingPage() {
                 className="btn-brutal-primary px-6 py-2 rounded-lg"
                 data-testid="register-nav-button"
               >
-                Get Started
+                {t("register")}
               </motion.button>
             </div>
           </nav>
@@ -87,10 +91,14 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-5xl md:text-7xl font-bold text-slate-900 leading-tight font-kids">
-              Math is <span className="text-[#FFD500]">Fun!</span>
+              {t("hero_title").split(" ").map((word, i) => 
+                word === "Fun!" || word === "வினோதயி!" || word === "வேடிக்கை!" ? 
+                  <span key={i} className="text-[#FFD500]">{word} </span> : 
+                  word + " "
+              )}
             </h2>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed">
-              Interactive math lessons for kids ages 5-10. Learn counting, numbers, addition, shapes and more through engaging games!
+              {t("hero_subtitle")}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <motion.button
@@ -100,7 +108,7 @@ export default function LandingPage() {
                 className="btn-brutal-primary px-8 py-4 rounded-xl text-lg flex items-center gap-2"
                 data-testid="hero-get-started-button"
               >
-                Start Learning <ArrowRight size={20} />
+                {t("start_learning")} <ArrowRight size={20} />
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -109,7 +117,7 @@ export default function LandingPage() {
                 className="btn-brutal px-8 py-4 rounded-xl text-lg bg-white"
                 data-testid="view-pricing-button"
               >
-                View Pricing
+                {t("view_pricing")}
               </motion.button>
             </div>
           </motion.div>
@@ -145,14 +153,14 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-4xl font-bold text-center text-slate-900 font-kids"
           >
-            Why Parents Love Us
+            {t("why_parents_love")}
           </motion.h2>
           <div className="mt-12 grid md:grid-cols-4 gap-6">
             {[
-              { icon: BookOpen, title: "Monthly New Lessons", desc: "Fresh content every month", color: "#FFD500" },
-              { icon: Trophy, title: "Progress Tracking", desc: "Watch your child grow", color: "#00E676" },
-              { icon: Users, title: "Age-Appropriate", desc: "Tailored for ages 5-10", color: "#0047FF" },
-              { icon: Star, title: "Fun & Engaging", desc: "Games they'll love", color: "#FF6B9D" },
+              { icon: BookOpen, titleKey: "feature_monthly", descKey: "feature_monthly_desc", color: "#FFD500" },
+              { icon: Trophy, titleKey: "feature_progress", descKey: "feature_progress_desc", color: "#00E676" },
+              { icon: Users, titleKey: "feature_age", descKey: "feature_age_desc", color: "#0047FF" },
+              { icon: Star, titleKey: "feature_fun", descKey: "feature_fun_desc", color: "#FF6B9D" },
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -164,8 +172,8 @@ export default function LandingPage() {
                 style={{ backgroundColor: feature.color }}
               >
                 <feature.icon size={48} className="mx-auto text-slate-900" strokeWidth={2} />
-                <h3 className="mt-4 text-xl font-bold text-slate-900">{feature.title}</h3>
-                <p className="mt-2 text-slate-700">{feature.desc}</p>
+                <h3 className="mt-4 text-xl font-bold text-slate-900">{t(feature.titleKey)}</h3>
+                <p className="mt-2 text-slate-700">{t(feature.descKey)}</p>
               </motion.div>
             ))}
           </div>
@@ -181,13 +189,13 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center"
           >
-            <h2 className="text-4xl font-bold text-slate-900 font-kids">Simple Pricing</h2>
-            <p className="mt-4 text-xl text-slate-600">Choose the plan that fits your child's age</p>
+            <h2 className="text-4xl font-bold text-slate-900 font-kids">{t("simple_pricing")}</h2>
+            <p className="mt-4 text-xl text-slate-600">{t("pricing_subtitle")}</p>
           </motion.div>
           
           <div className="mt-12 grid md:grid-cols-5 gap-6">
             {PRICING.map((plan, i) => (
-              <PricingCard key={plan.id} plan={plan} delay={i * 0.1} />
+              <PricingCard key={plan.id} plan={plan} delay={i * 0.1} t={t} />
             ))}
           </div>
         </div>
@@ -202,8 +210,8 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center"
           >
-            <h2 className="text-3xl font-bold text-slate-900 font-kids">Easy Payment Options</h2>
-            <p className="mt-4 text-lg text-slate-600">Pay securely with your preferred method</p>
+            <h2 className="text-3xl font-bold text-slate-900 font-kids">{t("payment_methods")}</h2>
+            <p className="mt-4 text-lg text-slate-600">{t("payment_subtitle")}</p>
           </motion.div>
           
           <div className="mt-8 grid md:grid-cols-2 gap-6">
@@ -214,8 +222,8 @@ export default function LandingPage() {
               className="card-brutal rounded-xl bg-[#0047FF] text-white"
             >
               <CreditCard size={48} />
-              <h3 className="mt-4 text-2xl font-bold">Credit/Debit Card</h3>
-              <p className="mt-2 text-blue-100">Secure payment via Stripe</p>
+              <h3 className="mt-4 text-2xl font-bold">{t("credit_card")}</h3>
+              <p className="mt-2 text-blue-100">{t("card_desc")}</p>
               <p className="mt-1 text-sm text-blue-200">Visa, Mastercard, American Express</p>
             </motion.div>
             
@@ -226,8 +234,8 @@ export default function LandingPage() {
               className="card-brutal rounded-xl bg-[#00E676]"
             >
               <QrCode size={48} className="text-slate-900" />
-              <h3 className="mt-4 text-2xl font-bold text-slate-900">Bank Transfer (QR)</h3>
-              <p className="mt-2 text-slate-700">Pay via bank app</p>
+              <h3 className="mt-4 text-2xl font-bold text-slate-900">{t("bank_qr")}</h3>
+              <p className="mt-2 text-slate-700">{t("bank_qr_desc")}</p>
               <p className="mt-1 text-sm text-slate-600">For Sri Lanka customers</p>
             </motion.div>
           </div>
@@ -242,8 +250,8 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 font-kids">Ready to Start?</h2>
-            <p className="mt-4 text-xl text-slate-700">Join thousands of kids learning math the fun way!</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 font-kids">{t("ready_start")}</h2>
+            <p className="mt-4 text-xl text-slate-700">{t("join_thousands")}</p>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -251,7 +259,7 @@ export default function LandingPage() {
               className="mt-8 btn-brutal bg-slate-900 text-white px-10 py-4 rounded-xl text-xl"
               data-testid="cta-get-started-button"
             >
-              Get Started Free
+              {t("get_started_free")}
             </motion.button>
           </motion.div>
         </div>

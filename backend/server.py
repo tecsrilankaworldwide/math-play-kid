@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -13,6 +13,10 @@ from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
 import random
+import asyncio
+import csv
+import io
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,6 +29,10 @@ db = client[os.environ['DB_NAME']]
 # JWT Config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'default-secret')
 JWT_ALGORITHM = "HS256"
+
+# Resend Email Config
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -503,7 +511,72 @@ async def admin_approve_payment(transaction_id: str, user = Depends(get_admin_us
         {"$set": {"subscription_active": True, "subscription_expires": expires.isoformat()}}
     )
     
+    # Send email notification
+    try:
+        parent = await db.users.find_one({"id": transaction["user_id"]}, {"_id": 0})
+        child = await db.children.find_one({"id": transaction["child_id"]}, {"_id": 0})
+        if parent and parent.get("email"):
+            await send_payment_approved_email(
+                parent["email"],
+                parent.get("name", "Parent"),
+                child.get("name", "Your child"),
+                transaction["plan_type"],
+                expires.strftime("%B %d, %Y")
+            )
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {e}")
+    
     return {"message": "Payment approved"}
+
+# Email sending function
+async def send_payment_approved_email(to_email: str, parent_name: str, child_name: str, plan_type: str, expires_date: str):
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #FFD500; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: #0A0B10; margin: 0;">MathPlayKids</h1>
+        </div>
+        <div style="background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0;">
+            <h2 style="color: #0A0B10;">Payment Approved! 🎉</h2>
+            <p style="color: #333; font-size: 16px;">Hi {parent_name},</p>
+            <p style="color: #333; font-size: 16px;">
+                Great news! Your payment has been verified and <strong>{child_name}'s</strong> subscription is now active.
+            </p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Plan:</strong> {plan_type.capitalize()}</p>
+                <p style="margin: 5px 0;"><strong>Valid Until:</strong> {expires_date}</p>
+            </div>
+            <p style="color: #333; font-size: 16px;">
+                {child_name} now has access to all lessons and games. Start learning today!
+            </p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="#" style="background-color: #0047FF; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                    Start Learning
+                </a>
+            </div>
+            <p style="color: #666; font-size: 14px;">
+                Thank you for choosing MathPlayKids!<br>
+                The MathPlayKids Team
+            </p>
+        </div>
+        <div style="background-color: #f5f5f5; padding: 15px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="color: #999; font-size: 12px; margin: 0;">© 2026 MathPlayKids. Making math fun!</p>
+        </div>
+    </div>
+    """
+    
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [to_email],
+        "subject": f"Payment Approved - {child_name}'s Subscription is Active!",
+        "html": html_content
+    }
+    
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Payment approval email sent to {to_email}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+        raise
 
 @api_router.post("/admin/lessons")
 async def admin_create_lesson(data: LessonCreate, user = Depends(get_admin_user)):
@@ -558,6 +631,67 @@ async def admin_delete_lesson(lesson_id: str, user = Depends(get_admin_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Lesson not found")
     return {"message": "Lesson deleted"}
+
+# Bulk question import from CSV
+@api_router.post("/admin/lessons/import-questions")
+async def import_questions_csv(file: UploadFile = File(...), user = Depends(get_admin_user)):
+    """
+    Import questions from CSV file.
+    CSV format: question,option1,option2,option3,option4,correct_answer,visual_hint
+    Returns list of parsed questions to be added to a lesson.
+    """
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    
+    try:
+        content = await file.read()
+        decoded = content.decode('utf-8')
+        reader = csv.DictReader(io.StringIO(decoded))
+        
+        questions = []
+        errors = []
+        
+        for i, row in enumerate(reader, start=2):  # Start at 2 since row 1 is header
+            try:
+                question = row.get('question', '').strip()
+                option1 = row.get('option1', '').strip()
+                option2 = row.get('option2', '').strip()
+                option3 = row.get('option3', '').strip()
+                option4 = row.get('option4', '').strip()
+                correct = row.get('correct_answer', '').strip()
+                hint = row.get('visual_hint', '').strip()
+                
+                if not question:
+                    errors.append(f"Row {i}: Missing question")
+                    continue
+                    
+                options = [option1, option2, option3, option4]
+                if not all(options):
+                    errors.append(f"Row {i}: Missing options")
+                    continue
+                    
+                if correct not in options:
+                    errors.append(f"Row {i}: Correct answer '{correct}' not in options")
+                    continue
+                
+                questions.append({
+                    "id": i,
+                    "question": question,
+                    "options": options,
+                    "correct_answer": correct,
+                    "visual_hint": hint
+                })
+            except Exception as e:
+                errors.append(f"Row {i}: {str(e)}")
+        
+        return {
+            "success": True,
+            "questions": questions,
+            "count": len(questions),
+            "errors": errors
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse CSV: {str(e)}")
 
 @api_router.get("/admin/stats")
 async def admin_get_stats(user = Depends(get_admin_user)):
