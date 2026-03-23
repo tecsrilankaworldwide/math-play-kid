@@ -376,8 +376,14 @@ async def create_manual_payment(data: ManualPaymentCreate, user = Depends(get_cu
     return {"message": "Payment submitted for verification", "transaction_id": transaction["id"]}
 
 # ============= LESSONS ROUTES =============
-@api_router.get("/lessons/{age_category}")
-async def get_lessons(age_category: str, user = Depends(get_current_user)):
+@api_router.get("/lessons/{child_id}")
+async def get_lessons_for_child(child_id: str, user = Depends(get_current_user)):
+    # Get child to find age_category
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]}, {"_id": 0})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    age_category = child.get("age_category", "age_5_6")
     lessons = await db.lessons.find({"age_category": age_category}, {"_id": 0}).to_list(100)
     return lessons
 
@@ -510,10 +516,48 @@ async def admin_create_lesson(data: LessonCreate, user = Depends(get_admin_user)
         "content": data.content,
         "is_free": data.is_free,
         "created_by": user["user_id"],
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
     }
     await db.lessons.insert_one(lesson)
     return {"id": lesson["id"], "message": "Lesson created"}
+
+@api_router.get("/admin/lessons")
+async def admin_get_lessons(user = Depends(get_admin_user)):
+    lessons = await db.lessons.find({}, {"_id": 0}).to_list(1000)
+    return lessons
+
+@api_router.get("/admin/lessons/{lesson_id}")
+async def admin_get_lesson(lesson_id: str, user = Depends(get_admin_user)):
+    lesson = await db.lessons.find_one({"id": lesson_id}, {"_id": 0})
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return lesson
+
+@api_router.put("/admin/lessons/{lesson_id}")
+async def admin_update_lesson(lesson_id: str, data: LessonCreate, user = Depends(get_admin_user)):
+    lesson = await db.lessons.find_one({"id": lesson_id})
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    
+    update_data = {
+        "title": data.title,
+        "description": data.description,
+        "age_category": data.age_category,
+        "module_type": data.module_type,
+        "content": data.content,
+        "is_free": data.is_free,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.lessons.update_one({"id": lesson_id}, {"$set": update_data})
+    return {"message": "Lesson updated"}
+
+@api_router.delete("/admin/lessons/{lesson_id}")
+async def admin_delete_lesson(lesson_id: str, user = Depends(get_admin_user)):
+    result = await db.lessons.delete_one({"id": lesson_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return {"message": "Lesson deleted"}
 
 @api_router.get("/admin/stats")
 async def admin_get_stats(user = Depends(get_admin_user)):

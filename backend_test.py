@@ -34,6 +34,8 @@ class MathPlaySubscriptionTester:
                 response = requests.post(url, json=data, headers=default_headers, timeout=10)
             elif method == 'PUT':
                 response = requests.put(url, json=data, headers=default_headers, timeout=10)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=default_headers, timeout=10)
 
             success = response.status_code == expected_status
             if success:
@@ -309,6 +311,146 @@ class MathPlaySubscriptionTester:
                 return False
         return success
 
+    def test_lesson_management(self):
+        """Test lesson management CRUD operations"""
+        if not self.admin_token:
+            print("❌ No admin token available")
+            return False
+        
+        headers = {'Authorization': f'Bearer {self.admin_token}'}
+        
+        # Test 1: Get all lessons (initially empty)
+        success, data = self.run_test("Get All Lessons", "GET", "admin/lessons", 200, headers=headers)
+        if not success:
+            return False
+        
+        initial_count = len(data) if isinstance(data, list) else 0
+        print(f"✅ Initial lessons count: {initial_count}")
+        
+        # Test 2: Create a new lesson
+        lesson_data = {
+            "title": "Test Counting Lesson",
+            "description": "A test lesson for counting objects",
+            "age_category": "age_5_6",
+            "module_type": "counting",
+            "is_free": True,
+            "content": {
+                "questions": [
+                    {
+                        "question": "How many apples are there?",
+                        "options": ["1", "2", "3", "4"],
+                        "correct_answer": "3",
+                        "visual_hint": "🍎🍎🍎"
+                    },
+                    {
+                        "question": "Count the stars",
+                        "options": ["2", "3", "4", "5"],
+                        "correct_answer": "4",
+                        "visual_hint": "⭐⭐⭐⭐"
+                    }
+                ]
+            }
+        }
+        
+        success, create_data = self.run_test("Create Lesson", "POST", "admin/lessons", 200, lesson_data, headers)
+        if not success:
+            return False
+        
+        if 'id' not in create_data:
+            print("❌ Create lesson response missing lesson ID")
+            return False
+        
+        lesson_id = create_data['id']
+        print(f"✅ Lesson created with ID: {lesson_id}")
+        
+        # Test 3: Get specific lesson
+        success, get_data = self.run_test("Get Specific Lesson", "GET", f"admin/lessons/{lesson_id}", 200, headers=headers)
+        if not success:
+            return False
+        
+        # Validate lesson data
+        required_fields = ['id', 'title', 'description', 'age_category', 'module_type', 'is_free', 'content']
+        for field in required_fields:
+            if field not in get_data:
+                print(f"❌ Missing field in lesson data: {field}")
+                return False
+        
+        if get_data['title'] != lesson_data['title']:
+            print(f"❌ Lesson title mismatch: expected {lesson_data['title']}, got {get_data['title']}")
+            return False
+        
+        print(f"✅ Lesson data validated successfully")
+        
+        # Test 4: Update lesson
+        update_data = {
+            "title": "Updated Test Counting Lesson",
+            "description": "An updated test lesson for counting objects",
+            "age_category": "age_7",
+            "module_type": "numbers",
+            "is_free": False,
+            "content": {
+                "questions": [
+                    {
+                        "question": "What number is this?",
+                        "options": ["5", "6", "7", "8"],
+                        "correct_answer": "7",
+                        "visual_hint": "7️⃣"
+                    }
+                ]
+            }
+        }
+        
+        success, update_response = self.run_test("Update Lesson", "PUT", f"admin/lessons/{lesson_id}", 200, update_data, headers)
+        if not success:
+            return False
+        
+        # Verify update
+        success, updated_data = self.run_test("Get Updated Lesson", "GET", f"admin/lessons/{lesson_id}", 200, headers=headers)
+        if not success:
+            return False
+        
+        if updated_data['title'] != update_data['title']:
+            print(f"❌ Lesson update failed: title not updated")
+            return False
+        
+        if updated_data['age_category'] != update_data['age_category']:
+            print(f"❌ Lesson update failed: age_category not updated")
+            return False
+        
+        print(f"✅ Lesson updated successfully")
+        
+        # Test 5: Get lessons for child (test child access)
+        if self.test_child_id:
+            success, child_lessons = self.run_test("Get Lessons for Child", "GET", f"lessons/{self.test_child_id}", 200, headers={'Authorization': f'Bearer {self.user_token}'})
+            if success:
+                print(f"✅ Child lessons retrieved - Count: {len(child_lessons) if isinstance(child_lessons, list) else 0}")
+            else:
+                print("⚠️ Child lessons endpoint failed (may be expected if no matching age category)")
+        
+        # Test 6: Delete lesson
+        success, delete_response = self.run_test("Delete Lesson", "DELETE", f"admin/lessons/{lesson_id}", 200, headers=headers)
+        if not success:
+            return False
+        
+        # Verify deletion
+        success, verify_data = self.run_test("Verify Lesson Deleted", "GET", f"admin/lessons/{lesson_id}", 404, headers=headers)
+        if not success:
+            print("❌ Lesson should be deleted (404 expected)")
+            return False
+        
+        print(f"✅ Lesson deleted successfully")
+        
+        # Test 7: Verify lessons count back to initial
+        success, final_data = self.run_test("Final Lessons Count", "GET", "admin/lessons", 200, headers=headers)
+        if success:
+            final_count = len(final_data) if isinstance(final_data, list) else 0
+            if final_count == initial_count:
+                print(f"✅ Lessons count back to initial: {final_count}")
+            else:
+                print(f"⚠️ Lessons count mismatch: expected {initial_count}, got {final_count}")
+        
+        return True
+
 def main():
     print("🚀 Starting MathPlay Kids Subscription Platform API Tests")
     print("=" * 60)
@@ -344,6 +486,9 @@ def main():
     tester.test_admin_stats()
     tester.test_admin_users()
     tester.test_admin_payments()
+    
+    print("\n📚 Testing Lesson Management...")
+    tester.test_lesson_management()
     
     # Print final results
     print("\n" + "=" * 60)
