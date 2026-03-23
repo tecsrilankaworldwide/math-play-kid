@@ -1,0 +1,49 @@
+{
+  "appId": "com.mathplay.kids",
+  "productName": "MathPlay Kids",
+  "copyright": "Copyright © 2026 MathPlay",
+  "directories": {
+    "output": "dist",
+    "buildResources": "electron"
+  },
+  "files": [
+    "build/**/*",
+    "electron/**/*"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "electron/icon.ico",
+    "artifactName": "MathPlay-Kids-${version}-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "electron/icon.ico",
+    "uninstallerIcon": "electron/icon.ico",
+    "installerHeaderIcon": "electron/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "MathPlay Kids"
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "electron/icon.icns",
+    "category": "public.app-category.education"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "electron/icon.png",
+    "category": "Education"
+  },
+  "publish": null
+}

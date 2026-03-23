@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="#FCF9F2"/>
+  <circle cx="256" cy="256" r="220" fill="#FFD166"/>
+  
+  <!-- Math symbols -->
+  <text x="120" y="200" font-family="Arial Black" font-size="80" fill="#073B4C">1</text>
+  <text x="200" y="200" font-family="Arial Black" font-size="80" fill="#118AB2">+</text>
+  <text x="280" y="200" font-family="Arial Black" font-size="80" fill="#073B4C">2</text>
+  <text x="360" y="200" font-family="Arial Black" font-size="80" fill="#EF476F">=</text>
+  
+  <!-- Answer -->
+  <text x="200" y="340" font-family="Arial Black" font-size="120" fill="#06D6A0">3</text>
+  
+  <!-- Star decorations -->
+  <polygon points="100,380 110,410 140,410 115,430 125,460 100,440 75,460 85,430 60,410 90,410" fill="#EF476F"/>
+  <polygon points="412,380 422,410 452,410 427,430 437,460 412,440 387,460 397,430 372,410 402,410" fill="#118AB2"/>
+  
+  <!-- Border -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#E5B64E" stroke-width="16"/>
+</svg>
