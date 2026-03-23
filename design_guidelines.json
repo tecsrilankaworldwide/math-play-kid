@@ -1,101 +1,94 @@
 {
-  "theme": "light",
+  "project_name": "Math Learning Platform",
+  "theme_strategy": "The Digital Playroom inside a Swiss Bank - Playful Neo-brutalism meets high-contrast administrative clarity.",
   "typography": {
-    "heading_font": "Fredoka, sans-serif",
-    "body_font": "Nunito, sans-serif",
-    "sizing": {
-      "h1": "text-5xl md:text-7xl font-black tracking-tight",
-      "h2": "text-4xl md:text-6xl font-extrabold",
-      "h3": "text-3xl md:text-4xl font-bold",
-      "body": "text-xl md:text-2xl font-bold",
-      "labels": "text-xl font-black uppercase tracking-[0.1em]"
-    }
+    "headings_kids": "Fredoka",
+    "headings_admin": "Outfit",
+    "body": "DM Sans",
+    "rules": [
+      "Use tracking-tight for headings > 32px",
+      "Overlines must be uppercase, tracking-[0.2em] and tiny",
+      "No Inter or Roboto allowed",
+      "Use explicit alignments, never default to center-align for paragraphs"
+    ]
   },
   "colors": {
-    "primary": "#FFD166",
-    "primary_shadow": "#E5B64E",
-    "secondary": "#118AB2",
-    "secondary_shadow": "#0B6B8A",
-    "accent_pink": "#EF476F",
-    "accent_pink_shadow": "#CC3354",
-    "accent_green": "#06D6A0",
-    "accent_green_shadow": "#04B384",
-    "background": "#FCF9F2",
-    "surface": "#FFFFFF",
-    "text": "#073B4C",
-    "text_muted": "#5C7D8A",
-    "warning": "#F78C6B",
-    "warning_shadow": "#D66A4A"
+    "primary": "#FFD500",
+    "secondary": "#0047FF",
+    "accent_success": "#00E676",
+    "accent_error": "#FF5252",
+    "background_kids": "#FDF8F5",
+    "background_admin_light": "#FDFDFD",
+    "background_admin_dark": "#0A0B10",
+    "text_dark": "#0A0B10",
+    "text_light": "#FFFFFF"
   },
-  "visual_enhancers": {
-    "surface_strategy": "Clay/Tactile UI - Elements should feel like physical, chunky, pushable wooden toys or plastic blocks.",
-    "button_styles": {
-      "base": "relative rounded-[2rem] font-black transition-all active:translate-y-2 select-none flex items-center justify-center gap-3 border-4 border-white/20",
-      "primary": "bg-[#FFD166] text-[#073B4C] shadow-[0_8px_0_#E5B64E] hover:brightness-105 active:shadow-[0_0px_0_#E5B64E]",
-      "secondary": "bg-[#118AB2] text-white shadow-[0_8px_0_#0B6B8A] hover:brightness-105 active:shadow-[0_0px_0_#0B6B8A]",
-      "pink": "bg-[#EF476F] text-white shadow-[0_8px_0_#CC3354] hover:brightness-105 active:shadow-[0_0px_0_#CC3354]",
-      "green": "bg-[#06D6A0] text-[#073B4C] shadow-[0_8px_0_#04B384] hover:brightness-105 active:shadow-[0_0px_0_#04B384]"
-    },
-    "card_styles": "bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_16px_40px_rgba(7,59,76,0.06)] border-4 border-white overflow-hidden relative",
-    "borders": "Avoid thin 1px sharp borders. Use thick 4px-8px strokes (white or tinted) or rely entirely on colored clay shadows for structure.",
-    "decorations": "Backgrounds should feature subtle, oversized SVG geometric shapes (circles, wavy blobs, stars) with 5-10% opacity floating around to break up the flat cream background."
-  },
-  "grids": {
-    "dashboard_bento": "grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8",
-    "spans": {
-      "hero_card": "col-span-1 md:col-span-12 lg:col-span-8 row-span-2",
-      "square_card": "col-span-1 md:col-span-6 lg:col-span-4 row-span-1"
-    }
+  "surfaces": {
+    "kids_cards": "Neo-Brutalist: Solid bright background (e.g. #FFD500), heavy dark border (border-2 border-slate-900), heavy hard shadow (shadow-[4px_4px_0px_0px_rgba(15,23,42,1)])",
+    "admin_cards": "Grid Borders: Flat background, 1px border-border/40, no soft shadows, border-collapse styles.",
+    "glass_panels": "bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm (Use for sticky headers and overlays)"
   },
   "layouts": {
-    "container": "max-w-7xl mx-auto px-6 py-8 md:px-12 md:py-16",
-    "navigation": "Bottom-heavy navigation for tiny hands. Top bar should only contain a massive 'Back' arrow and current Star/Badge count. No complex hamburger menus."
+    "landing_page": "Mode A: The Tetris Grid (Asymmetric Bento). grid-cols-1 md:grid-cols-12 gap-8.",
+    "learning_area": "Immersive fullscreen, massive tap targets (min-h-16), bento grid for modules (Counting, Shapes).",
+    "admin_dashboard": "Mode B: High Density Grid. grid-cols-1 md:grid-cols-4 gap-4, strict hierarchy."
   },
   "motion": {
-    "entrance": "Staggered spring entrances using framer-motion: initial={{ scale: 0.5, opacity: 0, rotate: -5 }} animate={{ scale: 1, opacity: 1, rotate: 0 }} transition={{ type: 'spring', bounce: 0.6, duration: 0.8 }}",
-    "hover": "Playful scale up (scale: 1.05) and slight rotation (rotate: 2deg).",
-    "tap": "Scale down (0.95) and translate-y to simulate pushing a physical block.",
-    "feedback_success": "Massive bounce + glow. Use react-confetti for module completion.",
-    "feedback_error": "Gentle horizontal wiggle (x: [-10, 10, -10, 10, 0]) to indicate 'try again' rather than a harsh error."
+    "kids_interactions": "Bouncy physics: hover:-translate-y-2 hover:shadow-[4px_8px_0px_0px_rgba(15,23,42,1)] active:translate-y-0 active:shadow-none transition-all duration-200",
+    "admin_interactions": "Subtle and sharp: hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+    "page_transitions": "Staggered fade-up for lists, framer-motion recommended."
   },
+  "components_instructions": {
+    "buttons": "Kids: Pill-shaped or heavily rounded, neo-brutalist shadows. Admin: Sharp edges (rounded-md), subtle hover states.",
+    "forms": "Use Shadcn customized heavily. Input fields need 2px borders, focus:ring-2 focus:border-black.",
+    "tables": "Shadcn tables for Admin. Use explicit text colors on hover. No muddy grays.",
+    "charts": "Shadcn charts (Recharts) for Admin/Parent analytics. Bright colors matching the kids theme.",
+    "modals": "Use Shadcn Dialog. Never use transparent backgrounds without blur."
+  },
+  "assets": {
+    "icons": "lucide-react for Admin/Parents. Phosphor Icons (Duotone) for Kids area.",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1759678444821-565ff103465c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHw0fHxraWRzJTIwbGVhcm5pbmclMjBtYXRoJTIwcGxheWZ1bHxlbnwwfHx8fDE3NzQyNzc2NjR8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Child playing with alphabet puzzle on carpet",
+        "category": "learning_hero"
+      },
+      {
+        "url": "https://images.pexels.com/photos/3975584/pexels-photo-3975584.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Parent surfing laptop while kid plays",
+        "category": "parent_dashboard_hero"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1638932717348-3b8f19865301?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwzfHxraWRzJTIwbGVhcm5pbmclMjBtYXRoJTIwcGxheWZ1bHxlbnwwfHx8fDE3NzQyNzc2NjR8MA&ixlib=rb-4.1.0&q=85",
+        "description": "a child is playing with wooden blocks on the floor",
+        "category": "math_modules_bg"
+      },
+      {
+        "url": "https://images.pexels.com/photos/29008324/pexels-photo-29008324.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Vibrant 3D abstract sphere with pastel colors",
+        "category": "landing_abstract_decoration"
+      }
+    ]
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use generic centered layouts, simplistic gradients, or uniform styling.",
+    "Apply 'Neo-Brutalist' borders (2px solid slate-900) on colorful cards to make them pop and feel like physical toys for the learning area.",
+    "Use framer-motion for micro-animations, especially bouncy physics for kids' UI elements.",
+    "Never use transparent backgrounds without blur for overlays or headers.",
+    "Always explicitly set hover text colors (e.g., hover:bg-slate-900 hover:text-white).",
+    "All interactive and key informational elements MUST include data-testid attributes (e.g., data-testid='login-button', data-testid='pricing-tier-monthly').",
+    "Do not use HTML-based components for advanced interactions; use Shadcn UI customized.",
+    "Ensure high contrast for readability, tinting greys with blue or orange to avoid 'dead' colors.",
+    "For the parent dashboard and admin panel, use strictly left-aligned geometric precision to build trust (financial/admin vibe).",
+    "Include both Stripe and manual Bank QR code options prominently in the pricing/checkout flows, keeping a trustworthy, secure appearance for this specific section."
+  ],
   "accessibility": {
-    "touch_targets": "Massive. Minimum 64x64 pixels. The entire card should be clickable, not just the button inside it.",
-    "contrast": "Deep indigo text (#073B4C) on yellow or white backgrounds ensures high APCA readability for developing eyes.",
-    "feedback": "Visual feedback is non-negotiable. Every tap MUST have a visual reaction.",
-    "data_testid": "Required on all interactive elements. Example: data-testid='module-counting-button'"
-  },
-  "media": {
-    "icons": "Use lucide-react. Standardize at size 48 to 80, with strokeWidth 3 or 4. Often nest them inside a circular contrasting background to make them 'pop'.",
-    "images": "Prioritize high-quality 3D renders or vector graphics. UI must not rely on reading."
+    "contrast": "Minimum 4.5:1 for normal text. Ensure text over images has adequate text-shadow.",
+    "motion": "Respect prefers-reduced-motion. Add aria-hidden to decorative elements.",
+    "tap_targets": "Minimum 48x48px for all clickable elements in the kids area."
   },
   "3d_libraries": {
-    "recommendation": "Use framer-motion for all UI interactivity. Use react-confetti for rewards. Complex WebGL/Three.js is overkill and distracts from the core learning loops; stick to 2.5D tactile clay shadows."
+    "recommendation": "Use framer-motion for 2.5D bouncy interactions (Neo-Brutalism) to maintain high performance across mobile devices in Sri Lanka. Use static high-quality vibrant 3D renders for landing page flair."
   },
-  "image_urls": [
-    {
-      "url": "https://images.unsplash.com/photo-1667753147067-87f4b81179c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwzfHxjdXRlJTIwZnJpZW5kbHklMjBhbmltYWwlMjBtYXNjb3QlMjAzZCUyMHJlbmRlcnxlbnwwfHx8fDE3NzQyMDQ1NjR8MA&ixlib=rb-4.1.0&q=85",
-      "description": "Green toy dinosaur - Use as the app's friendly mascot on the home page and as a visual guide or cheerleader inside the learning modules.",
-      "category": "mascot"
-    }
-  ],
-  "component_path": "/app/frontend/src/components/ui/",
-  "instructions_to_main_agent": [
-    "1. Setup Tailwind with the custom colors: primary, secondary, accent_pink, accent_green, background, and text.",
-    "2. Add Google Fonts 'Fredoka' and 'Nunito' to the global CSS and configure them in Tailwind config (sans).",
-    "3. Implement the 'Clay UI' button style. Use raw HTML/Tailwind for game modules. Avoid standard Shadcn Cards or Buttons, as they are too corporate/sterile for a 5-year-old. Create custom tactile buttons with thick colored bottom shadows (e.g. shadow-[0_8px_0_#E5B64E]) that reduce to 0px on active/tap state to simulate a real button press.",
-    "4. Text MUST be large, minimal, and friendly. Avoid standard paragraphs. Use icons + short labels (e.g., 'Play!', 'Numbers').",
-    "5. For the games (counting, shapes): Create large draggable or clickable zones. Use framer-motion for success/failure feedback (wiggle on wrong, bounce + glow on correct).",
-    "6. Build a Progress/Rewards page utilizing SVGs (Lucide 'Star' or 'Award') for stars/badges. When a user earns a star, trigger `react-confetti`.",
-    "7. Use lucide-react for icons, but make them massive (size 48-64) with strokeWidth 3 or 4.",
-    "8. The app background should be the soft cream (#FCF9F2). Optionally, add scattered faint SVG shapes (circles, triangles) with low opacity to make it feel like a colorful playroom."
-  ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Create depth through layered design elements with z-index hierarchy and clay-like shadows.",
-    "Do not center align the App container globally (.App { text-align: center; } is FORBIDDEN).",
-    "All interactive elements must have micro-animations (hover/active states).",
-    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
-    "Never use generic AI assistant emoji characters for icons. Use lucide-react.",
-    "Components MUST use named exports, Pages MUST use default exports.",
-    "All interactive and key informational elements MUST include a 'data-testid' attribute to facilitate robust automated testing."
-  ]
+  "instructions_to_main_agent": "Implement a dual-theme system. The /admin and /parent routes should use the 'Grid Borders' layout and 'Outfit' font for a highly professional, trustworthy look. The /learn routes should use the 'Neo-Brutalist' colorful style with 'Fredoka' font to maximize engagement for kids aged 5-10. Use standard Tailwind configuration to set up these dual palettes."
 }
