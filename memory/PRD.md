@@ -6,11 +6,12 @@ Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based 
 - Stripe payments + Bank QR for Sri Lanka
 - Admin panel for content management
 - Monthly subscription model
+- Multi-language support (English, Sinhala, Tamil)
 
 ## User Personas
 - **Parents**: Register, manage child profiles, subscribe, track progress
 - **Children (5-10)**: Use interactive math modules
-- **Admin**: Manage users, approve manual payments, view analytics
+- **Admin**: Manage users, lessons, approve manual payments, view analytics
 
 ## Core Requirements
 - 5 Age Categories: 5-6, 7, 8, 9, 10 years old
@@ -19,6 +20,8 @@ Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based 
 - Learning Modules: Counting, Numbers, Addition/Subtraction, Shapes, Quiz
 - Progress tracking with stars and badges
 - Admin dashboard for user/payment management
+- Lesson management with CSV bulk import
+- Multi-language: English, Sinhala, Tamil
 
 ## What's Been Implemented (Jan 2026)
 
@@ -27,26 +30,30 @@ Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based 
 - Child profiles with age categories
 - Stripe checkout integration
 - Manual QR payment tracking with admin approval
+- **Email notifications via Resend on payment approval**
 - Question generators with age-adjusted difficulty
-- Admin routes for stats, users, payments
+- Admin routes for stats, users, payments, lessons
+- **CSV bulk import for lesson questions**
 - Badge system for milestones
 
 ### Frontend (React + Tailwind + Framer Motion)
-- **Landing Page**: Hero, features, 5 pricing tiers, payment methods
-- **Auth Pages**: Login, Register with Neo-Brutalist design
-- **Dashboard**: Child profiles, subscription management, payment modal
-- **Learning Area**: Module selection, game modules with visual feedback
-- **Admin Dashboard**: Stats, user list, payment management with approval
+- **Multi-language support (EN/SI/TA) with LanguageContext**
+- **Language selector in header**
+- Landing Page with translated content
+- Auth Pages: Login, Register
+- Dashboard: Child profiles, subscription management
+- Learning Area: Module selection, game modules
+- Admin Dashboard: Stats, users, payments, **lesson management with CSV import**
 
 ### Payment System
 - Stripe checkout for card payments
 - Bank QR code display for manual payments
-- Admin approval workflow for QR payments
+- Admin approval workflow with email notifications
 
-### Design System
-- Neo-Brutalist "Clay UI" for kids sections (Fredoka font)
-- Professional grid-based design for admin (Outfit font)
-- DM Sans for body text
+### Translations
+- English (en) - Full support
+- Sinhala (si/සිංහල) - Full support  
+- Tamil (ta/தமிழ்) - Full support
 
 ## Admin Credentials
 - Email: admin@mathplay.com
@@ -61,15 +68,23 @@ Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based 
 | 9 | $4 | $13 |
 | 10 | $5 | $15 |
 
+## CSV Import Format
+```csv
+question,option1,option2,option3,option4,correct_answer,visual_hint
+How many apples?,1,2,3,4,3,🍎🍎🍎
+```
+
+## Environment Variables (Backend)
+- RESEND_API_KEY - For email notifications
+- SENDER_EMAIL - Email sender address
+
 ## Prioritized Backlog
 - P0: ✅ Complete
-- P1: Lesson management UI for admin (add/edit lessons)
-- P1: Multi-language support (Sinhala, Tamil)
-- P2: Parent analytics dashboard
+- P1: Parent analytics dashboard
 - P2: Daily streaks and challenges
+- P2: More question types
 
 ## Next Tasks
-1. Build lesson CRUD in admin panel
-2. Add Sinhala/Tamil language toggle
-3. Implement email notifications for payment verification
-4. Add more question types and difficulty levels
+1. Add parent analytics dashboard with learning insights
+2. Implement daily streaks to encourage practice
+3. Add more interactive question types (matching, drag-drop)
