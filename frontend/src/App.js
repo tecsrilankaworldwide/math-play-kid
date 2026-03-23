@@ -1,35 +1,33 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import CountingModule from "./pages/CountingModule";
-import NumbersModule from "./pages/NumbersModule";
-import AdditionModule from "./pages/AdditionModule";
-import ShapesModule from "./pages/ShapesModule";
-import QuizModule from "./pages/QuizModule";
-import RewardsPage from "./pages/RewardsPage";
+import { Toaster } from "sonner";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import Dashboard from "./pages/Dashboard";
+import LearnPage from "./pages/LearnPage";
+import GameModule from "./pages/GameModule";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import AdminDashboard from "./pages/AdminDashboard";
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: '#FCF9F2' }}>
-      {/* Background Decorations */}
-      <div className="floating-shape shape-circle-1" />
-      <div className="floating-shape shape-circle-2" />
-      <div className="floating-shape shape-star" />
-      <div className="floating-shape shape-triangle" />
-      <div className="floating-shape shape-blob" />
-      
+    <AuthProvider>
       <BrowserRouter>
+        <Toaster position="top-center" richColors />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/counting" element={<CountingModule />} />
-          <Route path="/numbers" element={<NumbersModule />} />
-          <Route path="/addition" element={<AdditionModule />} />
-          <Route path="/shapes" element={<ShapesModule />} />
-          <Route path="/quiz" element={<QuizModule />} />
-          <Route path="/rewards" element={<RewardsPage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/learn/:childId" element={<LearnPage />} />
+          <Route path="/learn/:childId/:module" element={<GameModule />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
-    </div>
+    </AuthProvider>
   );
 }
 
