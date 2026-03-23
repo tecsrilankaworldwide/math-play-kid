@@ -96,6 +96,7 @@ export default function Dashboard() {
       toast.success("Payment submitted! We'll verify and activate within 24 hours.");
       setShowPayment(null);
       setReferenceNumber("");
+      fetchChildren(); // Refresh children list
     } catch (err) {
       toast.error(err.response?.data?.detail || "Submission failed");
     }
