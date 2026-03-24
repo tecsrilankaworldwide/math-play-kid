@@ -17,6 +17,10 @@ const AGE_CATEGORIES = [
   { id: "age_8", name: "Age 8" },
   { id: "age_9", name: "Age 9" },
   { id: "age_10", name: "Age 10" },
+  { id: "age_11", name: "Age 11" },
+  { id: "age_12", name: "Age 12" },
+  { id: "age_13", name: "Age 13" },
+  { id: "age_14", name: "Age 14" },
 ];
 
 const MODULE_TYPES = [
@@ -25,6 +29,10 @@ const MODULE_TYPES = [
   { id: "addition", name: "Addition" },
   { id: "subtraction", name: "Subtraction" },
   { id: "shapes", name: "Shapes" },
+  { id: "multiplication", name: "Multiplication" },
+  { id: "division", name: "Division" },
+  { id: "fractions", name: "Fractions" },
+  { id: "algebra", name: "Algebra" },
 ];
 
 export default function AdminDashboard() {

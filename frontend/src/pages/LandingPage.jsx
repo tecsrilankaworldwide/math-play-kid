@@ -10,6 +10,10 @@ const PRICING = [
   { id: "age_8", nameKey: "age_8", monthly: 3, yearly: 10, color: "#0047FF", features: ["Advanced Counting", "Word Problems", "Geometry Intro", "Progress Tracking"] },
   { id: "age_9", nameKey: "age_9", monthly: 4, yearly: 13, color: "#FF6B9D", features: ["Multiplication Basics", "Fractions Intro", "Logic Puzzles", "Achievements"] },
   { id: "age_10", nameKey: "age_10", monthly: 5, yearly: 15, color: "#9B5DE5", features: ["All Operations", "Problem Solving", "Advanced Geometry", "Full Curriculum"] },
+  { id: "age_11", nameKey: "age_11", monthly: 6, yearly: 18, color: "#F78C6B", features: ["Algebra Basics", "Decimals", "Data & Graphs", "Critical Thinking"] },
+  { id: "age_12", nameKey: "age_12", monthly: 7, yearly: 21, color: "#00BCD4", features: ["Pre-Algebra", "Percentages", "Statistics", "Problem Analysis"] },
+  { id: "age_13", nameKey: "age_13", monthly: 8, yearly: 24, color: "#E91E63", features: ["Algebra I", "Linear Equations", "Probability", "Logical Reasoning"] },
+  { id: "age_14", nameKey: "age_14", monthly: 9, yearly: 27, color: "#607D8B", features: ["Algebra II", "Quadratics", "Functions", "Exam Preparation"] },
 ];
 
 const PricingCard = ({ plan, delay, t }) => (
@@ -193,9 +197,9 @@ export default function LandingPage() {
             <p className="mt-4 text-xl text-slate-600">{t("pricing_subtitle")}</p>
           </motion.div>
           
-          <div className="mt-12 grid md:grid-cols-5 gap-6">
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {PRICING.map((plan, i) => (
-              <PricingCard key={plan.id} plan={plan} delay={i * 0.1} t={t} />
+              <PricingCard key={plan.id} plan={plan} delay={i * 0.05} t={t} />
             ))}
           </div>
         </div>

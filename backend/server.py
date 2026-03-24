@@ -45,6 +45,10 @@ PRICING = {
     "age_8": {"monthly": 3.00, "yearly": 10.00, "name": "Age 8", "age_min": 8, "age_max": 8},
     "age_9": {"monthly": 4.00, "yearly": 13.00, "name": "Age 9", "age_min": 9, "age_max": 9},
     "age_10": {"monthly": 5.00, "yearly": 15.00, "name": "Age 10", "age_min": 10, "age_max": 10},
+    "age_11": {"monthly": 6.00, "yearly": 18.00, "name": "Age 11", "age_min": 11, "age_max": 11},
+    "age_12": {"monthly": 7.00, "yearly": 21.00, "name": "Age 12", "age_min": 12, "age_max": 12},
+    "age_13": {"monthly": 8.00, "yearly": 24.00, "name": "Age 13", "age_min": 13, "age_max": 13},
+    "age_14": {"monthly": 9.00, "yearly": 27.00, "name": "Age 14", "age_min": 14, "age_max": 14},
 }
 
 # ============= MODELS =============
@@ -167,8 +171,16 @@ async def create_child(data: ChildCreate, user = Depends(get_current_user)):
         age_category = "age_9"
     elif data.age == 10:
         age_category = "age_10"
+    elif data.age == 11:
+        age_category = "age_11"
+    elif data.age == 12:
+        age_category = "age_12"
+    elif data.age == 13:
+        age_category = "age_13"
+    elif data.age == 14:
+        age_category = "age_14"
     else:
-        raise HTTPException(status_code=400, detail="Age must be between 5 and 10")
+        raise HTTPException(status_code=400, detail="Age must be between 5 and 14")
     
     child = {
         "id": child_id,

@@ -15,6 +15,10 @@ const PRICING = {
   age_8: { monthly: 3, yearly: 10, name: "Age 8" },
   age_9: { monthly: 4, yearly: 13, name: "Age 9" },
   age_10: { monthly: 5, yearly: 15, name: "Age 10" },
+  age_11: { monthly: 6, yearly: 18, name: "Age 11" },
+  age_12: { monthly: 7, yearly: 21, name: "Age 12" },
+  age_13: { monthly: 8, yearly: 24, name: "Age 13" },
+  age_14: { monthly: 9, yearly: 27, name: "Age 14" },
 };
 
 const AGE_COLORS = {
@@ -23,6 +27,10 @@ const AGE_COLORS = {
   age_8: "#0047FF",
   age_9: "#FF6B9D",
   age_10: "#9B5DE5",
+  age_11: "#F78C6B",
+  age_12: "#00BCD4",
+  age_13: "#E91E63",
+  age_14: "#607D8B",
 };
 
 export default function Dashboard() {
@@ -250,7 +258,7 @@ export default function Dashboard() {
                   className="input-brutal"
                   data-testid="child-age-select"
                 >
-                  {[5, 6, 7, 8, 9, 10].map(age => (
+                  {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(age => (
                     <option key={age} value={age}>Age {age}</option>
                   ))}
                 </select>
