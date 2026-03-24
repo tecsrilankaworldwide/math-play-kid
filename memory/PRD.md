@@ -1,63 +1,36 @@
-# MathPlay Kids - Subscription Math Learning Platform
+# MathPlayKids - Product Requirements Document
 
-## Original Problem Statement
-Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based web platform for ages 5-10 with:
-- 5 age categories with tiered pricing
-- Stripe payments + Bank QR for Sri Lanka
-- Admin panel for content management
-- Monthly subscription model
-- Multi-language support (English, Sinhala, Tamil)
+## Overview
+Subscription-based web platform for teaching math to kids (ages 5-14) with tiered pricing (monthly/yearly). Multi-language support (English, Sinhala, Tamil), Stripe card payments, Bank QR manual upload for Sri Lanka, admin panel with lesson management.
 
-## User Personas
-- **Parents**: Register, manage child profiles, subscribe, track progress
-- **Children (5-10)**: Use interactive math modules
-- **Admin**: Manage users, lessons, approve manual payments, view analytics
+## Tech Stack
+- **Frontend**: React, React Router, Tailwind CSS, Framer Motion, Axios
+- **Backend**: FastAPI, Motor (Async MongoDB), JWT Authentication
+- **Payments**: Stripe Checkout API (Real Keys Configured)
+- **Email**: Resend API
+- **Database**: MongoDB
+- **Desktop**: Electron (config ready)
 
-## Core Requirements
-- 5 Age Categories: 5-6, 7, 8, 9, 10 years old
-- Pricing: Monthly ($1-5), Yearly ($5-15) based on age
-- Payment Methods: Stripe (international), Bank QR (Sri Lanka)
-- Learning Modules: Counting, Numbers, Addition/Subtraction, Shapes, Quiz
-- Progress tracking with stars and badges
-- Admin dashboard for user/payment management
-- Lesson management with CSV bulk import
-- Multi-language: English, Sinhala, Tamil
+## Third-Party Integrations
+| Service | Status | Keys |
+|---------|--------|------|
+| Stripe | LIVE (Test Mode) | `sk_test_51T9zLFFLUI5OkdhJ...` (User's account: TEC SRILANKA WORLDWIDE) |
+| Resend | Active | `re_GAAgXyGT_Jyt29U1qpwbGsMmWmuDrvoPA` |
+| GitHub | Pushed | `tecsrilankaworldwide/math-play-kid` |
 
-## What's Been Implemented (Jan 2026)
-
-### Backend (FastAPI + MongoDB)
-- JWT Authentication for parents
-- Child profiles with age categories
-- Stripe checkout integration
-- Manual QR payment tracking with admin approval
-- **Email notifications via Resend on payment approval**
-- Question generators with age-adjusted difficulty
-- Admin routes for stats, users, payments, lessons
-- **CSV bulk import for lesson questions**
-- Badge system for milestones
-
-### Frontend (React + Tailwind + Framer Motion)
-- **Multi-language support (EN/SI/TA) with LanguageContext**
-- **Language selector in header**
-- Landing Page with translated content
-- Auth Pages: Login, Register
-- Dashboard: Child profiles, subscription management
-- Learning Area: Module selection, game modules
-- Admin Dashboard: Stats, users, payments, **lesson management with CSV import**
-
-### Payment System
-- Stripe checkout for card payments
-- Bank QR code display for manual payments
-- Admin approval workflow with email notifications
-
-### Translations
-- English (en) - Full support
-- Sinhala (si/සිංහල) - Full support  
-- Tamil (ta/தமிழ்) - Full support
-
-## Admin Credentials
-- Email: admin@mathplay.com
-- Password: admin123
+## Completed Features (All Done)
+- [x] JWT Authentication (Admin/Parent roles)
+- [x] Multi-language support (English, Sinhala, Tamil)
+- [x] Parent Dashboard with child profiles
+- [x] Admin Dashboard (Lessons, Users, Payments tabs)
+- [x] Stripe Payment Integration (Working with user's real keys)
+- [x] Bank QR Manual Payment (Sri Lanka)
+- [x] Lesson Management System
+- [x] Bulk CSV Question Import
+- [x] Resend Email Notifications
+- [x] Age tiers 5-14 with 9 pricing levels
+- [x] Interactive Lesson Player with gamification
+- [x] Electron Desktop App Configuration
 
 ## Pricing Structure
 | Age | Monthly | Yearly |
@@ -67,24 +40,42 @@ Build the best maths teaching app for age 5 kid - PIVOTED to subscription-based 
 | 8 | $3 | $10 |
 | 9 | $4 | $13 |
 | 10 | $5 | $15 |
+| 11 | $6 | $18 |
+| 12 | $7 | $21 |
+| 13 | $8 | $24 |
+| 14 | $9 | $27 |
 
-## CSV Import Format
-```csv
-question,option1,option2,option3,option4,correct_answer,visual_hint
-How many apples?,1,2,3,4,3,🍎🍎🍎
+## Key Credentials
+- **Admin Login**: admin@mathplay.com / admin123
+- **Preview URL**: https://math-play-kids-3.preview.emergentagent.com
+
+## Database Schema
+- `users`: {email, hashed_password, role, created_at}
+- `children`: {parent_id, name, age_category, progress}
+- `subscriptions`: {user_id, child_id, plan_type, status, payment_method, end_date}
+- `lessons`: {title, description, age_category, questions, is_trial}
+- `payment_transactions`: {session_id, user_id, status}
+
+## File Structure
+```
+/app/
+├── backend/
+│   ├── server.py (Main API - 760+ lines)
+│   ├── requirements.txt
+│   └── .env (STRIPE_API_KEY, RESEND_API_KEY, etc.)
+├── frontend/
+│   ├── src/pages/ (LandingPage, Dashboard, AdminDashboard, etc.)
+│   ├── src/context/ (AuthContext, LanguageContext)
+│   ├── src/i18n/translations.js
+│   ├── electron/ (Desktop app configs)
+│   └── .env (REACT_APP_BACKEND_URL, REACT_APP_STRIPE_PUBLISHABLE_KEY)
 ```
 
-## Environment Variables (Backend)
-- RESEND_API_KEY - For email notifications
-- SENDER_EMAIL - Email sender address
+## Bug Fixes Applied
+- [x] Fixed Stripe "Pay with Card" button - Configured user's real Stripe API keys (March 24, 2026)
 
-## Prioritized Backlog
-- P0: ✅ Complete
-- P1: Parent analytics dashboard
-- P2: Daily streaks and challenges
-- P2: More question types
-
-## Next Tasks
-1. Add parent analytics dashboard with learning insights
-2. Implement daily streaks to encourage practice
-3. Add more interactive question types (matching, drag-drop)
+## Potential Future Enhancements
+- Switch to Stripe Live mode for production payments
+- Refactor server.py into separate routers
+- Add more lesson content
+- Implement offline mode using Electron
