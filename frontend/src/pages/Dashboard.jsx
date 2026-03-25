@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { Plus, User, Star, Play, CreditCard, QrCode, LogOut, Crown, X } from "lucide-react";
+import { Plus, User, Star, Play, CreditCard, QrCode, LogOut, Crown, X, BarChart3 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const BANK_QR_URL = "https://customer-assets.emergentagent.com/job_math-play-kids-3/artifacts/n7yjkf86_qrcode.jpg";
@@ -196,15 +196,27 @@ export default function Dashboard() {
 
                 <div className="mt-6 flex gap-3">
                   {child.subscription_active ? (
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate(`/learn/${child.id}`)}
-                      className="btn-brutal bg-slate-900 text-white flex-1 py-3 rounded-xl flex items-center justify-center gap-2"
-                      data-testid={`learn-button-${child.id}`}
-                    >
-                      <Play size={20} /> Learn
-                    </motion.button>
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(`/learn/${child.id}`)}
+                        className="btn-brutal bg-slate-900 text-white flex-1 py-3 rounded-xl flex items-center justify-center gap-2"
+                        data-testid={`learn-button-${child.id}`}
+                      >
+                        <Play size={20} /> Learn
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(`/progress/${child.id}`)}
+                        className="btn-brutal bg-indigo-600 text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2"
+                        data-testid={`progress-button-${child.id}`}
+                        title="View Progress"
+                      >
+                        <BarChart3 size={20} />
+                      </motion.button>
+                    </>
                   ) : (
                     <motion.button
                       whileHover={{ scale: 1.02 }}

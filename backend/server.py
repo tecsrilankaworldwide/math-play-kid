@@ -855,6 +855,165 @@ async def get_global_leaderboard(user = Depends(get_current_user)):
         "top_global": top_global,
         "total_participants": len(leaderboard_data)
     }
+
+# ============= PARENT PROGRESS DASHBOARD =============
+@api_router.get("/children/{child_id}/analytics")
+async def get_child_analytics(child_id: str, user = Depends(get_current_user)):
+    """Get detailed analytics for parent dashboard"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]}, {"_id": 0})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    progress = child.get("progress", {})
+    effort_stats = child.get("effort_stats", {})
+    streak = child.get("streak", {})
+    mistakes = child.get("mistakes", [])
+    achievements = child.get("achievements", [])
+    
+    # Module performance data
+    modules = ["counting", "numbers", "addition", "shapes"]
+    module_performance = []
+    for mod in modules:
+        stars = progress.get(f"{mod}_stars", 0)
+        module_performance.append({
+            "module": mod.capitalize(),
+            "stars": stars,
+            "color": {
+                "counting": "#FFD500",
+                "numbers": "#0047FF", 
+                "addition": "#00E676",
+                "shapes": "#FF6B9D"
+            }.get(mod, "#666")
+        })
+    
+    # Calculate accuracy
+    total_attempts = effort_stats.get("total_attempts", 0)
+    total_correct = effort_stats.get("total_correct", 0)
+    accuracy = round((total_correct / total_attempts * 100), 1) if total_attempts > 0 else 0
+    
+    # Weak topics analysis (based on mistakes)
+    mistake_types = {}
+    for mistake in mistakes:
+        q_type = mistake.get("question_type", "unknown")
+        if q_type not in mistake_types:
+            mistake_types[q_type] = {"count": 0, "reviewed": 0}
+        mistake_types[q_type]["count"] += 1
+        if mistake.get("reviewed"):
+            mistake_types[q_type]["reviewed"] += 1
+    
+    weak_topics = []
+    for topic, data in mistake_types.items():
+        weak_topics.append({
+            "topic": topic.replace("_", " ").capitalize(),
+            "mistakes": data["count"],
+            "reviewed": data["reviewed"],
+            "unreviewed": data["count"] - data["reviewed"]
+        })
+    weak_topics.sort(key=lambda x: x["mistakes"], reverse=True)
+    
+    # Daily activity (from streak history)
+    streak_history = streak.get("streak_history", [])
+    daily_activity = []
+    for date_str in streak_history[-14:]:  # Last 14 days
+        daily_activity.append({
+            "date": date_str,
+            "practiced": True
+        })
+    
+    # Fill in missing days
+    from datetime import timedelta
+    today = datetime.now(timezone.utc).date()
+    for i in range(14):
+        check_date = (today - timedelta(days=13-i)).isoformat()
+        if not any(d["date"] == check_date for d in daily_activity):
+            daily_activity.append({
+                "date": check_date,
+                "practiced": False
+            })
+    daily_activity.sort(key=lambda x: x["date"])
+    
+    # Weekly summary (questions per day this week)
+    questions_today = effort_stats.get("questions_today", 0)
+    best_day = effort_stats.get("best_day_questions", 0)
+    
+    # Achievement timeline
+    achievement_timeline = []
+    for ach in achievements[-10:]:  # Last 10 achievements
+        achievement_timeline.append({
+            "badge": ach.get("badge"),
+            "name": ach.get("name"),
+            "earned_at": ach.get("earned_at")
+        })
+    achievement_timeline.sort(key=lambda x: x["earned_at"] if x["earned_at"] else "", reverse=True)
+    
+    # Improvement metrics
+    improvement = {
+        "total_stars": progress.get("total_stars", 0),
+        "total_badges": len(progress.get("badges", [])),
+        "current_streak": streak.get("current_streak", 0),
+        "longest_streak": streak.get("longest_streak", 0),
+        "total_attempts": total_attempts,
+        "accuracy": accuracy,
+        "questions_today": questions_today,
+        "best_day_questions": best_day,
+        "login_days": effort_stats.get("login_days", 0),
+        "mistakes_reviewed": effort_stats.get("mistakes_reviewed", 0),
+        "total_mistakes": len(mistakes)
+    }
+    
+    # Progress over time simulation (based on achievements)
+    progress_timeline = []
+    running_stars = 0
+    for ach in sorted(achievements, key=lambda x: x.get("earned_at", "")):
+        if "star" in ach.get("badge", ""):
+            if ach["badge"] == "first_star":
+                running_stars = 1
+            elif ach["badge"] == "five_stars":
+                running_stars = 5
+            elif ach["badge"] == "ten_stars":
+                running_stars = 10
+            elif ach["badge"] == "twenty_stars":
+                running_stars = 20
+            elif ach["badge"] == "fifty_stars":
+                running_stars = 50
+            elif ach["badge"] == "century":
+                running_stars = 100
+            
+            progress_timeline.append({
+                "date": ach.get("earned_at", "")[:10] if ach.get("earned_at") else "",
+                "stars": running_stars,
+                "badge": ach.get("name")
+            })
+    
+    # Add current state
+    if progress.get("total_stars", 0) > running_stars:
+        progress_timeline.append({
+            "date": datetime.now(timezone.utc).date().isoformat(),
+            "stars": progress.get("total_stars", 0),
+            "badge": None
+        })
+    
+    return {
+        "child": {
+            "id": child["id"],
+            "name": child["name"],
+            "age": child.get("age"),
+            "age_category": child.get("age_category")
+        },
+        "improvement": improvement,
+        "module_performance": module_performance,
+        "weak_topics": weak_topics,
+        "daily_activity": daily_activity,
+        "achievement_timeline": achievement_timeline,
+        "progress_timeline": progress_timeline,
+        "summary": {
+            "overall_performance": "Excellent" if accuracy >= 80 else "Good" if accuracy >= 60 else "Needs Practice" if accuracy >= 40 else "Just Starting",
+            "streak_status": "On Fire!" if streak.get("current_streak", 0) >= 7 else "Building Momentum" if streak.get("current_streak", 0) >= 3 else "Getting Started",
+            "engagement_level": "High" if effort_stats.get("login_days", 0) >= 7 else "Medium" if effort_stats.get("login_days", 0) >= 3 else "Low"
+        }
+    }
+
+# ============= PRICING ROUTES =============
 @api_router.get("/pricing")
 async def get_pricing():
     return PRICING
