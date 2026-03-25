@@ -5,6 +5,7 @@ import axios from "axios";
 import Confetti from "react-confetti";
 import { useAuth } from "../context/AuthContext";
 import { ArrowLeft, Star, Plus, Minus, X, Divide } from "lucide-react";
+import BadgeCelebrationModal from "../components/BadgeCelebrationModal";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -36,6 +37,8 @@ export default function GameModule() {
   const [quizScore, setQuizScore] = useState(0);
   const [quizNum, setQuizNum] = useState(1);
   const [quizComplete, setQuizComplete] = useState(false);
+  const [newBadge, setNewBadge] = useState(null); // For badge celebration
+  const [existingBadges, setExistingBadges] = useState([]); // Track existing badges
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,6 +53,7 @@ export default function GameModule() {
       const res = await axios.get(`${API}/children/${childId}`);
       setChild(res.data);
       setStars(res.data.progress?.[`${module === "quiz" ? "quiz" : module}_stars`] || 0);
+      setExistingBadges(res.data.progress?.badges || []); // Store existing badges
       if (!res.data.subscription_active) {
         navigate("/dashboard");
         return;
@@ -91,8 +95,20 @@ export default function GameModule() {
       }
       
       try {
-        await axios.put(`${API}/children/${childId}/progress?module=${module === "quiz" ? "quiz" : module}&stars=1`);
+        const response = await axios.put(`${API}/children/${childId}/progress?module=${module === "quiz" ? "quiz" : module}&stars=1`);
         setStars(prev => prev + 1);
+        
+        // Check for new badges
+        const newBadges = response.data.progress?.badges || [];
+        const earnedNewBadge = newBadges.find(badge => !existingBadges.includes(badge));
+        
+        if (earnedNewBadge) {
+          // Delay showing celebration until after correct answer feedback
+          setTimeout(() => {
+            setNewBadge(earnedNewBadge);
+            setExistingBadges(newBadges);
+          }, 1500);
+        }
       } catch (e) {
         console.error(e);
       }
@@ -409,6 +425,14 @@ export default function GameModule() {
           )}
         </motion.div>
       </main>
+
+      {/* Badge Celebration Modal */}
+      {newBadge && (
+        <BadgeCelebrationModal
+          badge={newBadge}
+          onClose={() => setNewBadge(null)}
+        />
+      )}
     </div>
   );
 }
