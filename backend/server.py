@@ -715,7 +715,146 @@ async def get_achievements(child_id: str, user = Depends(get_current_user)):
         "progress_to_next": progress_to_next
     }
 
-# ============= PRICING ROUTES =============
+# ============= LEADERBOARD ROUTES =============
+@api_router.get("/leaderboard/{age_category}")
+async def get_leaderboard(age_category: str, user = Depends(get_current_user)):
+    """Get leaderboard for a specific age category"""
+    
+    # Get all children in this age category with active subscriptions
+    children = await db.children.find(
+        {"age_category": age_category},
+        {"_id": 0, "id": 1, "name": 1, "progress": 1, "streak": 1, "effort_stats": 1, "parent_id": 1}
+    ).to_list(1000)
+    
+    if not children:
+        return {
+            "leaderboard": [],
+            "user_rank": None,
+            "total_participants": 0,
+            "age_category": age_category
+        }
+    
+    # Calculate scores for each child
+    leaderboard_data = []
+    for child in children:
+        total_stars = child.get("progress", {}).get("total_stars", 0)
+        current_streak = child.get("streak", {}).get("current_streak", 0)
+        total_badges = len(child.get("progress", {}).get("badges", []))
+        total_attempts = child.get("effort_stats", {}).get("total_attempts", 0)
+        
+        # Composite score: stars (weight 3) + streak days (weight 2) + badges (weight 5) + attempts (weight 0.1)
+        score = (total_stars * 3) + (current_streak * 2) + (total_badges * 5) + (total_attempts * 0.1)
+        
+        leaderboard_data.append({
+            "child_id": child["id"],
+            "name": child["name"],
+            "parent_id": child.get("parent_id"),
+            "total_stars": total_stars,
+            "current_streak": current_streak,
+            "total_badges": total_badges,
+            "total_attempts": total_attempts,
+            "score": round(score, 1)
+        })
+    
+    # Sort by score descending
+    leaderboard_data.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Add ranks
+    for i, entry in enumerate(leaderboard_data):
+        entry["rank"] = i + 1
+    
+    # Find user's children's ranks
+    user_children = await db.children.find({"parent_id": user["user_id"], "age_category": age_category}, {"_id": 0, "id": 1}).to_list(100)
+    user_child_ids = [c["id"] for c in user_children]
+    
+    user_ranks = []
+    for entry in leaderboard_data:
+        if entry["child_id"] in user_child_ids:
+            user_ranks.append({
+                "child_id": entry["child_id"],
+                "name": entry["name"],
+                "rank": entry["rank"],
+                "score": entry["score"],
+                "total_stars": entry["total_stars"]
+            })
+    
+    # Only return top 50 for leaderboard display (privacy + performance)
+    # But mark which ones belong to current user
+    display_leaderboard = []
+    for entry in leaderboard_data[:50]:
+        display_entry = {
+            "rank": entry["rank"],
+            "name": entry["name"][:1] + "***" if entry["parent_id"] != user["user_id"] else entry["name"],  # Privacy: show only first letter for others
+            "total_stars": entry["total_stars"],
+            "current_streak": entry["current_streak"],
+            "total_badges": entry["total_badges"],
+            "score": entry["score"],
+            "is_current_user": entry["child_id"] in user_child_ids
+        }
+        display_leaderboard.append(display_entry)
+    
+    return {
+        "leaderboard": display_leaderboard,
+        "user_ranks": user_ranks,
+        "total_participants": len(leaderboard_data),
+        "age_category": age_category
+    }
+
+@api_router.get("/leaderboard/global/top")
+async def get_global_leaderboard(user = Depends(get_current_user)):
+    """Get global top performers across all ages"""
+    
+    # Get all children
+    children = await db.children.find(
+        {},
+        {"_id": 0, "id": 1, "name": 1, "age": 1, "age_category": 1, "progress": 1, "streak": 1, "effort_stats": 1, "parent_id": 1}
+    ).to_list(5000)
+    
+    # Calculate scores
+    leaderboard_data = []
+    for child in children:
+        total_stars = child.get("progress", {}).get("total_stars", 0)
+        current_streak = child.get("streak", {}).get("current_streak", 0)
+        total_badges = len(child.get("progress", {}).get("badges", []))
+        
+        score = (total_stars * 3) + (current_streak * 2) + (total_badges * 5)
+        
+        leaderboard_data.append({
+            "child_id": child["id"],
+            "name": child["name"],
+            "age": child.get("age", 0),
+            "parent_id": child.get("parent_id"),
+            "total_stars": total_stars,
+            "current_streak": current_streak,
+            "total_badges": total_badges,
+            "score": round(score, 1)
+        })
+    
+    # Sort and rank
+    leaderboard_data.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Get user's children
+    user_children = await db.children.find({"parent_id": user["user_id"]}, {"_id": 0, "id": 1}).to_list(100)
+    user_child_ids = [c["id"] for c in user_children]
+    
+    # Top 20 global
+    top_global = []
+    for i, entry in enumerate(leaderboard_data[:20]):
+        top_global.append({
+            "rank": i + 1,
+            "name": entry["name"][:1] + "***" if entry["parent_id"] != user["user_id"] else entry["name"],
+            "age": entry["age"],
+            "total_stars": entry["total_stars"],
+            "current_streak": entry["current_streak"],
+            "total_badges": entry["total_badges"],
+            "score": entry["score"],
+            "is_current_user": entry["child_id"] in user_child_ids
+        })
+    
+    return {
+        "top_global": top_global,
+        "total_participants": len(leaderboard_data)
+    }
 @api_router.get("/pricing")
 async def get_pricing():
     return PRICING

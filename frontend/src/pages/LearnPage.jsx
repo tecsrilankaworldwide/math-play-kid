@@ -3,13 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap, Flame, AlertCircle, Target } from "lucide-react";
+import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap, Flame, AlertCircle, Target, Crown } from "lucide-react";
 import FullLessonModal from "../components/FullLessonModal";
 import TimedExamModal from "../components/TimedExamModal";
 import MistakeReviewModal from "../components/MistakeReviewModal";
 import AchievementBadgesModal from "../components/AchievementBadgesModal";
 import StreakDisplay from "../components/StreakDisplay";
 import ProgressIndicator from "../components/ProgressIndicator";
+import LeaderboardModal from "../components/LeaderboardModal";
 import { getLessonById } from "../data/fullLessons";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -62,6 +63,7 @@ export default function LearnPage() {
   const [showTimedExam, setShowTimedExam] = useState(false); // For timed exam modal
   const [showMistakeReview, setShowMistakeReview] = useState(false); // For mistake review
   const [showAchievements, setShowAchievements] = useState(false); // For achievements
+  const [showLeaderboard, setShowLeaderboard] = useState(false); // For leaderboard
   const [mistakeCount, setMistakeCount] = useState(0); // Count of unreviewed mistakes
   const [progressToNext, setProgressToNext] = useState([]); // Progress towards next badges
   const [effortStats, setEffortStats] = useState(null); // Effort tracking stats
@@ -269,6 +271,40 @@ export default function LearnPage() {
             </div>
           </motion.button>
         </div>
+
+        {/* Leaderboard Card - Full Width */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          whileHover={{ scale: 1.01, y: -3 }}
+          onClick={() => setShowLeaderboard(true)}
+          className="w-full mb-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-white border-4 border-slate-900 shadow-lg text-left relative overflow-hidden"
+          data-testid="leaderboard-card"
+        >
+          {/* Decorative elements */}
+          <div className="absolute top-2 right-4 text-4xl opacity-30">🏆</div>
+          <div className="absolute bottom-2 right-16 text-3xl opacity-20">🥇</div>
+          <div className="absolute top-4 right-20 text-2xl opacity-20">🥈</div>
+          
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Crown size={32} className="text-yellow-300" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold font-kids">Leaderboard</h3>
+                <p className="text-indigo-200 text-sm mt-1">
+                  Compete with students your age!
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold">🏆</div>
+              <p className="text-xs text-indigo-200 mt-1">See rankings</p>
+            </div>
+          </div>
+        </motion.button>
 
         {/* Progress to Next Badges */}
         {progressToNext && progressToNext.length > 0 && (
@@ -534,6 +570,15 @@ export default function LearnPage() {
           childId={childId}
           childName={child?.name || "Student"}
           onClose={() => setShowAchievements(false)}
+        />
+      )}
+
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <LeaderboardModal
+          childAgeCategory={child?.age_category || "age_5_6"}
+          childName={child?.name || "Student"}
+          onClose={() => setShowLeaderboard(false)}
         />
       )}
     </div>
