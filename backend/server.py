@@ -88,6 +88,23 @@ class ManualPaymentCreate(BaseModel):
     age_category: str
     reference_number: str
 
+class MistakeRecord(BaseModel):
+    question_id: str
+    question_text: str
+    question_type: str
+    user_answer: str
+    correct_answer: str
+    options: List[str]
+
+class AnswerSubmission(BaseModel):
+    question_id: str
+    question_text: str
+    question_type: str
+    user_answer: str
+    correct_answer: str
+    options: List[str]
+    is_correct: bool
+
 # ============= AUTH HELPERS =============
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -199,6 +216,14 @@ async def create_child(data: ChildCreate, user = Depends(get_current_user)):
             "badges": [],
             "lessons_completed": []
         },
+        "streak": {
+            "current_streak": 0,
+            "longest_streak": 0,
+            "last_practice_date": None,
+            "streak_history": []
+        },
+        "mistakes": [],
+        "achievements": [],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.children.insert_one(child)
@@ -228,21 +253,257 @@ async def update_child_progress(child_id: str, module: str, stars: int = 1, user
         progress[module_field] = progress.get(module_field, 0) + stars
     progress["total_stars"] = progress.get("total_stars", 0) + stars
     
-    # Check badges
+    # ============ STREAK TRACKING ============
+    streak_data = child.get("streak", {
+        "current_streak": 0,
+        "longest_streak": 0,
+        "last_practice_date": None,
+        "streak_history": []
+    })
+    
+    today = datetime.now(timezone.utc).date().isoformat()
+    last_practice = streak_data.get("last_practice_date")
+    
+    if last_practice != today:
+        # Check if this is a consecutive day
+        if last_practice:
+            last_date = datetime.fromisoformat(last_practice).date()
+            today_date = datetime.now(timezone.utc).date()
+            days_diff = (today_date - last_date).days
+            
+            if days_diff == 1:
+                # Consecutive day - increment streak
+                streak_data["current_streak"] = streak_data.get("current_streak", 0) + 1
+            elif days_diff > 1:
+                # Streak broken - reset
+                streak_data["current_streak"] = 1
+            # If days_diff == 0, same day - don't change streak
+        else:
+            # First practice ever
+            streak_data["current_streak"] = 1
+        
+        streak_data["last_practice_date"] = today
+        
+        # Update longest streak
+        if streak_data["current_streak"] > streak_data.get("longest_streak", 0):
+            streak_data["longest_streak"] = streak_data["current_streak"]
+        
+        # Add to streak history (keep last 30 days)
+        streak_history = streak_data.get("streak_history", [])
+        if today not in streak_history:
+            streak_history.append(today)
+            streak_data["streak_history"] = streak_history[-30:]
+    
+    # ============ ACHIEVEMENT BADGES ============
     badges = progress.get("badges", [])
+    achievements = child.get("achievements", [])
     total = progress["total_stars"]
+    current_streak = streak_data.get("current_streak", 0)
+    
+    # Star-based badges
     if total >= 1 and "first_star" not in badges:
         badges.append("first_star")
+        achievements.append({"badge": "first_star", "name": "First Star", "earned_at": datetime.now(timezone.utc).isoformat()})
     if total >= 5 and "five_stars" not in badges:
         badges.append("five_stars")
+        achievements.append({"badge": "five_stars", "name": "5 Stars", "earned_at": datetime.now(timezone.utc).isoformat()})
     if total >= 10 and "ten_stars" not in badges:
         badges.append("ten_stars")
+        achievements.append({"badge": "ten_stars", "name": "10 Stars", "earned_at": datetime.now(timezone.utc).isoformat()})
     if total >= 20 and "twenty_stars" not in badges:
         badges.append("twenty_stars")
+        achievements.append({"badge": "twenty_stars", "name": "20 Stars", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if total >= 50 and "fifty_stars" not in badges:
+        badges.append("fifty_stars")
+        achievements.append({"badge": "fifty_stars", "name": "50 Stars", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if total >= 100 and "century" not in badges:
+        badges.append("century")
+        achievements.append({"badge": "century", "name": "Century Club", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
+    # Streak-based badges
+    if current_streak >= 3 and "streak_3" not in badges:
+        badges.append("streak_3")
+        achievements.append({"badge": "streak_3", "name": "3-Day Streak", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if current_streak >= 7 and "streak_7" not in badges:
+        badges.append("streak_7")
+        achievements.append({"badge": "streak_7", "name": "Week Warrior", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if current_streak >= 14 and "streak_14" not in badges:
+        badges.append("streak_14")
+        achievements.append({"badge": "streak_14", "name": "2-Week Champion", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if current_streak >= 30 and "streak_30" not in badges:
+        badges.append("streak_30")
+        achievements.append({"badge": "streak_30", "name": "Monthly Master", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
     progress["badges"] = badges
     
-    await db.children.update_one({"id": child_id}, {"$set": {"progress": progress}})
-    return progress
+    await db.children.update_one(
+        {"id": child_id}, 
+        {"$set": {
+            "progress": progress, 
+            "streak": streak_data,
+            "achievements": achievements
+        }}
+    )
+    
+    return {
+        "progress": progress,
+        "streak": streak_data,
+        "new_badges": [a for a in achievements if a["earned_at"] == datetime.now(timezone.utc).date().isoformat()]
+    }
+
+# ============= MISTAKE TRACKING ROUTES =============
+@api_router.post("/children/{child_id}/mistakes")
+async def record_mistake(child_id: str, data: AnswerSubmission, user = Depends(get_current_user)):
+    """Record an answer (wrong answers are saved for review)"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    # Only record mistakes (wrong answers)
+    if not data.is_correct:
+        mistake = {
+            "id": str(uuid.uuid4()),
+            "question_id": data.question_id,
+            "question_text": data.question_text,
+            "question_type": data.question_type,
+            "user_answer": data.user_answer,
+            "correct_answer": data.correct_answer,
+            "options": data.options,
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "reviewed": False,
+            "review_count": 0
+        }
+        
+        # Add to mistakes list (keep last 50 mistakes)
+        mistakes = child.get("mistakes", [])
+        mistakes.append(mistake)
+        mistakes = mistakes[-50:]  # Keep only last 50
+        
+        await db.children.update_one(
+            {"id": child_id},
+            {"$set": {"mistakes": mistakes}}
+        )
+        
+        return {"recorded": True, "mistake_id": mistake["id"]}
+    
+    return {"recorded": False, "message": "Correct answer, not recorded as mistake"}
+
+@api_router.get("/children/{child_id}/mistakes")
+async def get_mistakes(child_id: str, user = Depends(get_current_user)):
+    """Get all recorded mistakes for a child"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]}, {"_id": 0})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    mistakes = child.get("mistakes", [])
+    return {
+        "mistakes": mistakes,
+        "total_count": len(mistakes),
+        "unreviewed_count": len([m for m in mistakes if not m.get("reviewed", False)])
+    }
+
+@api_router.put("/children/{child_id}/mistakes/{mistake_id}/review")
+async def mark_mistake_reviewed(child_id: str, mistake_id: str, user = Depends(get_current_user)):
+    """Mark a mistake as reviewed"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    mistakes = child.get("mistakes", [])
+    for mistake in mistakes:
+        if mistake.get("id") == mistake_id:
+            mistake["reviewed"] = True
+            mistake["review_count"] = mistake.get("review_count", 0) + 1
+            mistake["last_reviewed_at"] = datetime.now(timezone.utc).isoformat()
+            break
+    
+    await db.children.update_one({"id": child_id}, {"$set": {"mistakes": mistakes}})
+    return {"message": "Mistake marked as reviewed"}
+
+@api_router.delete("/children/{child_id}/mistakes/{mistake_id}")
+async def delete_mistake(child_id: str, mistake_id: str, user = Depends(get_current_user)):
+    """Delete a specific mistake from the review list"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    mistakes = child.get("mistakes", [])
+    mistakes = [m for m in mistakes if m.get("id") != mistake_id]
+    
+    await db.children.update_one({"id": child_id}, {"$set": {"mistakes": mistakes}})
+    return {"message": "Mistake deleted"}
+
+# ============= STREAK ROUTES =============
+@api_router.get("/children/{child_id}/streak")
+async def get_streak(child_id: str, user = Depends(get_current_user)):
+    """Get streak data for a child"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]}, {"_id": 0})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    streak = child.get("streak", {
+        "current_streak": 0,
+        "longest_streak": 0,
+        "last_practice_date": None,
+        "streak_history": []
+    })
+    
+    # Check if streak is still valid (not broken)
+    if streak.get("last_practice_date"):
+        last_date = datetime.fromisoformat(streak["last_practice_date"]).date()
+        today_date = datetime.now(timezone.utc).date()
+        days_diff = (today_date - last_date).days
+        
+        if days_diff > 1:
+            # Streak is broken but hasn't been reset yet
+            streak["current_streak"] = 0
+    
+    return streak
+
+# ============= ACHIEVEMENTS/BADGES ROUTES =============
+@api_router.get("/children/{child_id}/achievements")
+async def get_achievements(child_id: str, user = Depends(get_current_user)):
+    """Get all achievements/badges for a child"""
+    child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]}, {"_id": 0})
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+    
+    achievements = child.get("achievements", [])
+    badges = child.get("progress", {}).get("badges", [])
+    
+    # Define all available badges with metadata
+    all_badges = {
+        "first_star": {"name": "First Star", "icon": "⭐", "description": "Earned your first star!", "category": "stars"},
+        "five_stars": {"name": "5 Stars", "icon": "🌟", "description": "Earned 5 stars!", "category": "stars"},
+        "ten_stars": {"name": "10 Stars", "icon": "✨", "description": "Earned 10 stars!", "category": "stars"},
+        "twenty_stars": {"name": "20 Stars", "icon": "💫", "description": "Earned 20 stars!", "category": "stars"},
+        "fifty_stars": {"name": "50 Stars", "icon": "🎖️", "description": "Earned 50 stars!", "category": "stars"},
+        "century": {"name": "Century Club", "icon": "🏆", "description": "Earned 100 stars!", "category": "stars"},
+        "streak_3": {"name": "3-Day Streak", "icon": "🔥", "description": "Practiced 3 days in a row!", "category": "streaks"},
+        "streak_7": {"name": "Week Warrior", "icon": "🔥", "description": "Practiced 7 days in a row!", "category": "streaks"},
+        "streak_14": {"name": "2-Week Champion", "icon": "🔥", "description": "Practiced 14 days in a row!", "category": "streaks"},
+        "streak_30": {"name": "Monthly Master", "icon": "👑", "description": "Practiced 30 days in a row!", "category": "streaks"},
+        "speed_demon": {"name": "Speed Demon", "icon": "⚡", "description": "Answered 5 questions under 5 seconds each!", "category": "special"},
+        "perfect_quiz": {"name": "Perfect Quiz", "icon": "💯", "description": "Got 10/10 on a quiz!", "category": "special"},
+        "math_explorer": {"name": "Math Explorer", "icon": "🧭", "description": "Tried all math modules!", "category": "special"},
+    }
+    
+    earned_badges = []
+    locked_badges = []
+    
+    for badge_id, badge_info in all_badges.items():
+        if badge_id in badges:
+            earned_at = next((a["earned_at"] for a in achievements if a.get("badge") == badge_id), None)
+            earned_badges.append({**badge_info, "id": badge_id, "earned": True, "earned_at": earned_at})
+        else:
+            locked_badges.append({**badge_info, "id": badge_id, "earned": False})
+    
+    return {
+        "earned": earned_badges,
+        "locked": locked_badges,
+        "total_earned": len(earned_badges),
+        "total_available": len(all_badges)
+    }
 
 # ============= PRICING ROUTES =============
 @api_router.get("/pricing")

@@ -96,6 +96,21 @@ export default function GameModule() {
       } catch (e) {
         console.error(e);
       }
+    } else {
+      // Record mistake for review later
+      try {
+        await axios.post(`${API}/children/${childId}/mistakes`, {
+          question_id: question.id,
+          question_text: question.question,
+          question_type: question.type,
+          user_answer: answer,
+          correct_answer: question.correct_answer,
+          options: question.options,
+          is_correct: false
+        });
+      } catch (e) {
+        console.error("Failed to record mistake:", e);
+      }
     }
 
     setTimeout(() => {

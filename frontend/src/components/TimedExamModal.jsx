@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Clock, Trophy, AlertTriangle, ChevronRight, RotateCcw, Zap, Target, Award } from "lucide-react";
 import { getExamQuestions, TIME_LIMITS } from "../data/examQuestions";
+import axios from "axios";
 
-export default function TimedExamModal({ ageCategory, onClose, childName }) {
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+export default function TimedExamModal({ ageCategory, onClose, childName, childId }) {
   const [stage, setStage] = useState("select"); // select, ready, exam, results
   const [difficulty, setDifficulty] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -77,6 +80,20 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
     setTimeTaken(prev => [...prev, qTime]);
     setAnswers(prev => [...prev, { answer, correct, timeout, time: qTime }]);
     
+    // Record mistake if wrong and childId is provided
+    if (!correct && answer !== null && childId) {
+      const q = questions[currentQ];
+      axios.post(`${API}/children/${childId}/mistakes`, {
+        question_id: q.id || `exam-${currentQ}`,
+        question_text: q.question,
+        question_type: q.type || "exam",
+        user_answer: answer,
+        correct_answer: q.answer,
+        options: q.options,
+        is_correct: false
+      }).catch(e => console.error("Failed to record mistake:", e));
+    }
+    
     // Brief feedback then move on
     setTimeout(() => {
       setShowFeedback(false);
@@ -88,7 +105,7 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
         setStage("results");
       }
     }, 800);
-  }, [currentQ, questions, questionStartTime, showFeedback, difficulty]);
+  }, [currentQ, questions, questionStartTime, showFeedback, difficulty, childId]);
 
   // Calculate results
   const getResults = () => {

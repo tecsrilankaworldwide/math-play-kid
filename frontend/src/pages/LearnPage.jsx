@@ -3,9 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap } from "lucide-react";
+import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap, Flame, AlertCircle } from "lucide-react";
 import FullLessonModal from "../components/FullLessonModal";
 import TimedExamModal from "../components/TimedExamModal";
+import MistakeReviewModal from "../components/MistakeReviewModal";
+import AchievementBadgesModal from "../components/AchievementBadgesModal";
+import StreakDisplay from "../components/StreakDisplay";
 import { getLessonById } from "../data/fullLessons";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -56,6 +59,9 @@ export default function LearnPage() {
   const [showLesson, setShowLesson] = useState(null); // For full lesson modal
   const [selectedModule, setSelectedModule] = useState(null);
   const [showTimedExam, setShowTimedExam] = useState(false); // For timed exam modal
+  const [showMistakeReview, setShowMistakeReview] = useState(false); // For mistake review
+  const [showAchievements, setShowAchievements] = useState(false); // For achievements
+  const [mistakeCount, setMistakeCount] = useState(0); // Count of unreviewed mistakes
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -73,6 +79,14 @@ export default function LearnPage() {
       ]);
       
       setChild(childRes.data);
+      
+      // Fetch mistake count
+      try {
+        const mistakesRes = await axios.get(`${API}/children/${childId}/mistakes`);
+        setMistakeCount(mistakesRes.data.unreviewed_count || 0);
+      } catch (e) {
+        // Ignore if mistakes endpoint fails
+      }
       
       // Check subscription - allow free lessons
       if (!childRes.data.subscription_active) {
@@ -129,12 +143,18 @@ export default function LearnPage() {
           </motion.button>
           
           <h1 className="text-2xl font-bold text-slate-900 font-kids">
-            Hi, {child?.name}! 👋
+            Hi, {child?.name}! 
           </h1>
           
-          <div className="btn-brutal bg-[#FFD500] px-4 py-2 rounded-xl flex items-center gap-2">
-            <Star size={24} fill="#0A0B10" />
-            <span className="font-bold text-xl">{child?.progress?.total_stars || 0}</span>
+          <div className="flex items-center gap-3">
+            {/* Streak Display */}
+            <StreakDisplay childId={childId} compact />
+            
+            {/* Stars */}
+            <div className="btn-brutal bg-[#FFD500] px-4 py-2 rounded-xl flex items-center gap-2">
+              <Star size={24} fill="#0A0B10" />
+              <span className="font-bold text-xl">{child?.progress?.total_stars || 0}</span>
+            </div>
           </div>
         </div>
       </header>
@@ -148,6 +168,95 @@ export default function LearnPage() {
           <h2 className="text-4xl font-bold text-slate-900 font-kids">What do you want to learn?</h2>
           <p className="mt-2 text-xl text-slate-600">Pick a module and start playing!</p>
         </motion.div>
+
+        {/* Gamification Cards Row */}
+        <div className="grid md:grid-cols-3 gap-4 mb-10">
+          {/* Streak Card */}
+          <StreakDisplay childId={childId} />
+
+          {/* Mistake Review Card */}
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            whileHover={{ scale: 1.02, y: -3 }}
+            onClick={() => setShowMistakeReview(true)}
+            className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-5 text-white border-4 border-slate-900 shadow-lg text-left relative overflow-hidden"
+            data-testid="mistake-review-card"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold font-kids flex items-center gap-2">
+                  <AlertCircle size={24} />
+                  Mistake Review
+                </h3>
+                <p className="text-purple-100 text-sm mt-1">
+                  Learn from your errors
+                </p>
+              </div>
+              {mistakeCount > 0 && (
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full"
+                >
+                  {mistakeCount} new
+                </motion.div>
+              )}
+            </div>
+            <div className="mt-4 flex items-center gap-2">
+              <BookOpen size={20} className="text-purple-200" />
+              <span className="text-purple-100 text-sm">
+                {mistakeCount === 0 ? "All caught up!" : `${mistakeCount} mistakes to review`}
+              </span>
+            </div>
+          </motion.button>
+
+          {/* Achievements Card */}
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ scale: 1.02, y: -3 }}
+            onClick={() => setShowAchievements(true)}
+            className="bg-gradient-to-br from-amber-500 to-yellow-400 rounded-2xl p-5 text-white border-4 border-slate-900 shadow-lg text-left"
+            data-testid="achievements-card"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold font-kids flex items-center gap-2">
+                  <Trophy size={24} />
+                  Achievements
+                </h3>
+                <p className="text-amber-100 text-sm mt-1">
+                  View your badges
+                </p>
+              </div>
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-3xl"
+              >
+                🏆
+              </motion.div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-1">
+              {(child?.progress?.badges || []).slice(0, 4).map((badge, i) => (
+                <span key={badge} className="text-xl">
+                  {badge.includes("streak") ? "🔥" : badge.includes("star") ? "⭐" : "🏅"}
+                </span>
+              ))}
+              {(child?.progress?.badges?.length || 0) > 4 && (
+                <span className="text-amber-100 text-sm font-bold">
+                  +{child.progress.badges.length - 4} more
+                </span>
+              )}
+              {(!child?.progress?.badges || child.progress.badges.length === 0) && (
+                <span className="text-amber-100 text-sm">Earn your first badge!</span>
+              )}
+            </div>
+          </motion.button>
+        </div>
 
         {/* Practice Modules */}
         <div className="mb-12">
@@ -294,15 +403,39 @@ export default function LearnPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          <h3 className="text-2xl font-bold text-slate-900 font-kids mb-4">Your Badges</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-slate-900 font-kids">Your Badges</h3>
+            <button
+              onClick={() => setShowAchievements(true)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-semibold"
+              data-testid="view-all-badges-button"
+            >
+              View All →
+            </button>
+          </div>
           <div className="flex flex-wrap gap-3">
-            {(child?.progress?.badges || []).map((badge, i) => (
-              <div key={badge} className="bg-[#FFD500] border-2 border-slate-900 px-4 py-2 rounded-full font-bold">
-                {badge.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} ⭐
-              </div>
+            {(child?.progress?.badges || []).slice(0, 6).map((badge, i) => (
+              <motion.div 
+                key={badge} 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-[#FFD500] border-2 border-slate-900 px-4 py-2 rounded-full font-bold flex items-center gap-2"
+              >
+                {badge.includes("streak") ? "🔥" : badge.includes("century") ? "🏆" : "⭐"}
+                {badge.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+              </motion.div>
             ))}
             {(!child?.progress?.badges || child.progress.badges.length === 0) && (
               <p className="text-slate-500">Complete modules to earn badges!</p>
+            )}
+            {(child?.progress?.badges?.length || 0) > 6 && (
+              <button
+                onClick={() => setShowAchievements(true)}
+                className="bg-slate-200 border-2 border-slate-300 px-4 py-2 rounded-full font-bold text-slate-600 hover:bg-slate-300 transition-colors"
+              >
+                +{child.progress.badges.length - 6} more
+              </button>
             )}
           </div>
         </motion.div>
@@ -325,7 +458,31 @@ export default function LearnPage() {
         <TimedExamModal
           ageCategory={child?.age_category || "age_5_6"}
           childName={child?.name || "Student"}
+          childId={childId}
           onClose={() => setShowTimedExam(false)}
+        />
+      )}
+
+      {/* Mistake Review Modal */}
+      {showMistakeReview && (
+        <MistakeReviewModal
+          childId={childId}
+          onClose={() => {
+            setShowMistakeReview(false);
+            // Refresh mistake count
+            axios.get(`${API}/children/${childId}/mistakes`)
+              .then(res => setMistakeCount(res.data.unreviewed_count || 0))
+              .catch(() => {});
+          }}
+        />
+      )}
+
+      {/* Achievements Modal */}
+      {showAchievements && (
+        <AchievementBadgesModal
+          childId={childId}
+          childName={child?.name || "Student"}
+          onClose={() => setShowAchievements(false)}
         />
       )}
     </div>
