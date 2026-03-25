@@ -32,6 +32,25 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 - [x] Bulk CSV Question Import
 - [x] Resend Email Notifications
 - [x] Electron Desktop App Config
+- [x] Full Lessons (paginated textbook-style tutorials)
+- [x] Timed Exam Practice with per-question stopwatch
+- [x] **Daily Streak System** (March 25, 2026)
+  - Track consecutive practice days per child
+  - Streak display in header (compact fire emoji)
+  - Full streak card with 7-day calendar visualization
+  - Longest streak tracking
+- [x] **Mistake Review System** (March 25, 2026)
+  - Automatic recording of wrong answers from practice/exams
+  - Modal to review mistakes with original question and options
+  - Mark as reviewed, delete, refresh functionality
+  - Unreviewed count badge on LearnPage
+- [x] **Achievement Badges** (March 25, 2026)
+  - 13 badges total (stars, streaks, special categories)
+  - Star badges: First Star, 5 Stars, 10 Stars, 20 Stars, 50 Stars, Century Club
+  - Streak badges: 3-Day Streak, Week Warrior, 2-Week Champion, Monthly Master
+  - Special badges: Speed Demon, Perfect Quiz, Math Explorer
+  - Progress bar showing badge completion percentage
+  - Celebration animations for earned badges
 
 ## Math Curriculum by Age (FIXED - March 25, 2026)
 
@@ -97,7 +116,10 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 
 ## Database Schema
 - `users`: {email, hashed_password, role, created_at}
-- `children`: {parent_id, name, age, age_category, progress, subscription_active}
+- `children`: {parent_id, name, age, age_category, progress, subscription_active, streak, mistakes, achievements}
+  - `streak`: {current_streak, longest_streak, last_practice_date, streak_history[]}
+  - `mistakes`: [{id, question_id, question_text, question_type, user_answer, correct_answer, options, recorded_at, reviewed, review_count}]
+  - `achievements`: [{badge, name, earned_at}]
 - `subscriptions`: {user_id, child_id, plan_type, status, payment_method, end_date}
 - `lessons`: {title, description, age_category, questions, is_trial}
 - `payment_transactions`: {session_id, user_id, status}
@@ -106,19 +128,35 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 ```
 /app/
 ├── backend/
-│   ├── server.py
+│   ├── server.py (with gamification endpoints)
 │   ├── requirements.txt
 │   └── .env
 ├── frontend/
-│   ├── src/pages/
-│   │   ├── LearnPage.jsx (age-filtered modules)
-│   │   ├── GameModule.jsx (question display)
-│   │   └── Dashboard.jsx
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── StreakDisplay.jsx (streak visualization)
+│   │   │   ├── MistakeReviewModal.jsx (mistake review UI)
+│   │   │   ├── AchievementBadgesModal.jsx (achievements UI)
+│   │   │   ├── FullLessonModal.jsx
+│   │   │   └── TimedExamModal.jsx
+│   │   ├── pages/
+│   │   │   ├── LearnPage.jsx (gamification cards)
+│   │   │   ├── GameModule.jsx (mistake recording)
+│   │   │   └── Dashboard.jsx
+│   │   └── data/
 │   ├── electron/
 │   └── .env
-├── CURRICULUM.md (Full curriculum reference)
+├── CURRICULUM.md
 └── memory/PRD.md
 ```
+
+## API Endpoints (Gamification)
+- `GET /api/children/{id}/streak` - Get streak data
+- `GET /api/children/{id}/mistakes` - Get recorded mistakes
+- `POST /api/children/{id}/mistakes` - Record a wrong answer
+- `PUT /api/children/{id}/mistakes/{id}/review` - Mark mistake reviewed
+- `DELETE /api/children/{id}/mistakes/{id}` - Delete mistake
+- `GET /api/children/{id}/achievements` - Get earned/locked badges
 
 ## Bug Fixes Applied
 - [x] Stripe "Pay with Card" - Configured user's real keys (March 24)
@@ -139,8 +177,11 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 | 14 | $9 | $27 |
 
 ## Future Enhancements
-- Switch to Stripe Live mode for production
-- Add word problems
-- Progress tracking reports for parents
-- Timed challenges
-- Achievement badges
+- [ ] Parent Progress Dashboard (visual charts showing improvement, weak topics, time spent)
+- [ ] Weekly Report Emails (auto-send progress to parents using Resend)
+- [ ] Fun Mini-Games (Speed Race, Math Puzzle, Math Bingo)
+- [ ] Hint System & Adaptive Difficulty
+- [ ] Switch to Stripe Live mode for production
+- [ ] Add word problems
+- [ ] Backend refactoring (split server.py into route modules)
+- [ ] Desktop App (Electron build)
