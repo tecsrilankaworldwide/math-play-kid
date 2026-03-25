@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play } from "lucide-react";
+import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap } from "lucide-react";
 import FullLessonModal from "../components/FullLessonModal";
+import TimedExamModal from "../components/TimedExamModal";
 import { getLessonById } from "../data/fullLessons";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -52,8 +53,9 @@ export default function LearnPage() {
   const [child, setChild] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showLesson, setShowLesson] = useState(null); // For mini-lesson modal
+  const [showLesson, setShowLesson] = useState(null); // For full lesson modal
   const [selectedModule, setSelectedModule] = useState(null);
+  const [showTimedExam, setShowTimedExam] = useState(false); // For timed exam modal
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -205,6 +207,46 @@ export default function LearnPage() {
           </div>
         </div>
 
+        {/* Timed Exam Practice */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mb-12"
+        >
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-6 border-4 border-slate-900 shadow-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Clock size={36} className="text-white" />
+                </div>
+                <div className="text-white">
+                  <h3 className="text-2xl font-bold font-kids">⏱️ Timed Exam Practice</h3>
+                  <p className="text-orange-100">Test your speed! Improve your time management for real exams.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTimedExam(true)}
+                className="bg-white hover:bg-slate-100 text-orange-600 px-6 py-3 rounded-xl font-bold text-lg flex items-center gap-2 shadow-lg transition-all"
+                data-testid="timed-exam-button"
+              >
+                <Zap size={24} /> Start Timed Exam
+              </button>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center text-white/90 text-sm">
+              <div className="bg-white/10 rounded-lg py-2">
+                <span className="font-bold">Easy:</span> 30s/question
+              </div>
+              <div className="bg-white/10 rounded-lg py-2">
+                <span className="font-bold">Medium:</span> 45s/question
+              </div>
+              <div className="bg-white/10 rounded-lg py-2">
+                <span className="font-bold">Hard:</span> 60s/question
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Custom Lessons from Admin */}
         {lessons.length > 0 && (
           <div className="mb-12">
@@ -275,6 +317,15 @@ export default function LearnPage() {
             setShowLesson(null);
             navigate(`/learn/${childId}/${selectedModule}`);
           }}
+        />
+      )}
+
+      {/* Timed Exam Modal */}
+      {showTimedExam && (
+        <TimedExamModal
+          ageCategory={child?.age_category || "age_5_6"}
+          childName={child?.name || "Student"}
+          onClose={() => setShowTimedExam(false)}
         />
       )}
     </div>
