@@ -417,9 +417,24 @@ async def get_free_lessons(age_category: str):
 def generate_question(module: str, age_category: str):
     objects = ["🍎", "🌟", "🎈", "🐻", "🌸", "🦋", "🍪", "🚗"]
     
-    # Adjust difficulty based on age
-    max_count = 10 if age_category == "age_5_6" else 15 if age_category in ["age_7", "age_8"] else 20
-    max_add = 9 if age_category == "age_5_6" else 12 if age_category in ["age_7", "age_8"] else 15
+    # Adjust difficulty based on age - MUCH more differentiated
+    difficulty_settings = {
+        "age_5_6": {"max_count": 10, "max_add": 5, "max_mult": 2, "allow_negative": False},
+        "age_7": {"max_count": 15, "max_add": 10, "max_mult": 5, "allow_negative": False},
+        "age_8": {"max_count": 20, "max_add": 15, "max_mult": 6, "allow_negative": False},
+        "age_9": {"max_count": 30, "max_add": 25, "max_mult": 8, "allow_negative": False},
+        "age_10": {"max_count": 50, "max_add": 50, "max_mult": 10, "allow_negative": True},
+        "age_11": {"max_count": 100, "max_add": 100, "max_mult": 12, "allow_negative": True},
+        "age_12": {"max_count": 200, "max_add": 200, "max_mult": 15, "allow_negative": True},
+        "age_13": {"max_count": 500, "max_add": 500, "max_mult": 20, "allow_negative": True},
+        "age_14": {"max_count": 1000, "max_add": 1000, "max_mult": 25, "allow_negative": True},
+    }
+    
+    settings = difficulty_settings.get(age_category, difficulty_settings["age_5_6"])
+    max_count = settings["max_count"]
+    max_add = settings["max_add"]
+    max_mult = settings["max_mult"]
+    allow_negative = settings["allow_negative"]
     
     if module == "counting":
         count = random.randint(1, max_count)
@@ -443,30 +458,60 @@ def generate_question(module: str, age_category: str):
         return {"type": "numbers", "question": "What number is this?", "options": options, "correct_answer": str(number), "visual_data": {"number": number}}
     
     elif module == "addition":
-        a = random.randint(1, max_add)
-        b = random.randint(1, max_add)
+        # Min values increase with age
+        min_val = 1 if age_category in ["age_5_6", "age_7", "age_8"] else 10 if age_category in ["age_9", "age_10"] else 50
+        a = random.randint(min_val, max_add)
+        b = random.randint(min_val, max_add)
         answer = a + b
         options = [str(answer)]
         while len(options) < 4:
-            wrong = random.randint(2, max_add * 2)
-            if str(wrong) not in options:
+            # Generate wrong answers close to correct answer
+            offset = random.randint(1, max(5, max_add // 10))
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
                 options.append(str(wrong))
         random.shuffle(options)
         obj = random.choice(objects)
         return {"type": "addition", "question": f"{a} + {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
     
     elif module == "subtraction":
-        a = random.randint(5, max_add + 5)
+        min_val = 5 if age_category in ["age_5_6", "age_7", "age_8"] else 20 if age_category in ["age_9", "age_10"] else 100
+        a = random.randint(min_val, max_add + min_val)
         b = random.randint(1, a - 1)
         answer = a - b
         options = [str(answer)]
         while len(options) < 4:
-            wrong = random.randint(0, max_add)
-            if str(wrong) not in options:
+            offset = random.randint(1, max(3, max_add // 10))
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong >= 0:
                 options.append(str(wrong))
         random.shuffle(options)
         obj = random.choice(objects)
         return {"type": "subtraction", "question": f"{a} - {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
+    
+    elif module == "multiplication":
+        a = random.randint(2, max_mult)
+        b = random.randint(2, max_mult)
+        answer = a * b
+        options = [str(answer)]
+        while len(options) < 4:
+            wrong = random.randint(max(4, answer - 10), answer + 15)
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        return {"type": "multiplication", "question": f"{a} × {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "operation": "multiply"}}
+    
+    elif module == "division":
+        b = random.randint(2, max(3, max_mult // 2))
+        answer = random.randint(2, max(5, max_mult // 2))
+        a = b * answer  # Ensure clean division
+        options = [str(answer)]
+        while len(options) < 4:
+            wrong = random.randint(1, answer + 5)
+            if str(wrong) not in options:
+                options.append(str(wrong))
+        random.shuffle(options)
+        return {"type": "division", "question": f"{a} ÷ {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "operation": "divide"}}
     
     elif module == "shapes":
         shapes = [{"name": "Circle", "emoji": "🔴"}, {"name": "Square", "emoji": "🟦"}, {"name": "Triangle", "emoji": "🔺"}, {"name": "Star", "emoji": "⭐"}, {"name": "Heart", "emoji": "❤️"}, {"name": "Diamond", "emoji": "🔷"}]
@@ -482,7 +527,13 @@ def generate_question(module: str, age_category: str):
 @api_router.get("/question/{module}")
 async def get_question(module: str, age_category: str = "age_5_6"):
     if module == "quiz":
-        module = random.choice(["counting", "numbers", "addition", "subtraction", "shapes"])
+        # Different quiz modules based on age
+        if age_category in ["age_5_6", "age_7"]:
+            module = random.choice(["counting", "numbers", "addition", "shapes"])
+        elif age_category in ["age_8", "age_9"]:
+            module = random.choice(["addition", "subtraction", "shapes", "multiplication"])
+        else:  # age_10 to age_14
+            module = random.choice(["addition", "subtraction", "multiplication", "division"])
     
     question = generate_question(module, age_category)
     if not question:

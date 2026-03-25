@@ -7,13 +7,20 @@ import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play }
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const MODULES = [
-  { id: "counting", name: "Counting", icon: Sparkles, color: "#FFD500", desc: "Learn to count objects" },
-  { id: "numbers", name: "Numbers", icon: Hash, color: "#0047FF", desc: "Recognize numbers" },
-  { id: "addition", name: "Add & Subtract", icon: Plus, color: "#00E676", desc: "Basic math operations" },
-  { id: "shapes", name: "Shapes", icon: Shapes, color: "#FF6B9D", desc: "Learn shapes" },
-  { id: "quiz", name: "Quiz Time!", icon: Trophy, color: "#9B5DE5", desc: "Test your skills" },
+const BASE_MODULES = [
+  { id: "counting", name: "Counting", icon: Sparkles, color: "#FFD500", desc: "Learn to count objects", minAge: 5 },
+  { id: "numbers", name: "Numbers", icon: Hash, color: "#0047FF", desc: "Recognize numbers", minAge: 5 },
+  { id: "addition", name: "Add & Subtract", icon: Plus, color: "#00E676", desc: "Basic math operations", minAge: 5 },
+  { id: "shapes", name: "Shapes", icon: Shapes, color: "#FF6B9D", desc: "Learn shapes", minAge: 5 },
+  { id: "multiplication", name: "Multiply", icon: Sparkles, color: "#F78C6B", desc: "Multiplication tables", minAge: 8 },
+  { id: "division", name: "Divide", icon: Hash, color: "#00BCD4", desc: "Division practice", minAge: 10 },
+  { id: "quiz", name: "Quiz Time!", icon: Trophy, color: "#9B5DE5", desc: "Test your skills", minAge: 5 },
 ];
+
+// Filter modules based on child's age
+const getModulesForAge = (age) => {
+  return BASE_MODULES.filter(m => age >= m.minAge);
+};
 
 const LESSON_COLORS = ["#FFD500", "#00E676", "#0047FF", "#FF6B9D", "#9B5DE5", "#F78C6B"];
 
@@ -121,7 +128,7 @@ export default function LearnPage() {
         <div className="mb-12">
           <h3 className="text-2xl font-bold text-slate-900 font-kids mb-4">Practice Games</h3>
           <div className="grid md:grid-cols-3 gap-6">
-            {MODULES.map((module, i) => (
+            {getModulesForAge(child?.age || 5).map((module, i) => (
               <motion.button
                 key={module.id}
                 initial={{ opacity: 0, y: 30 }}

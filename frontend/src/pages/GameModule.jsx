@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import Confetti from "react-confetti";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Star, Plus, Minus, X, Divide } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -54,19 +54,21 @@ export default function GameModule() {
         navigate("/dashboard");
         return;
       }
-      fetchQuestion();
+      // Pass the age_category directly since setChild is async
+      fetchQuestion(res.data.age_category);
     } catch (e) {
       navigate("/dashboard");
     }
     setLoading(false);
   };
 
-  const fetchQuestion = async () => {
+  const fetchQuestion = async (ageCategory = null) => {
     setSelected(null);
     setIsCorrect(null);
     try {
       const moduleType = module === "addition" ? mode : module;
-      const res = await axios.get(`${API}/question/${moduleType}?age_category=${child?.age_category || "age_5_6"}`);
+      const age = ageCategory || child?.age_category || "age_5_6";
+      const res = await axios.get(`${API}/question/${moduleType}?age_category=${age}`);
       setQuestion(res.data);
     } catch (e) {
       console.error(e);
@@ -102,10 +104,10 @@ export default function GameModule() {
           setQuizComplete(true);
         } else {
           setQuizNum(prev => prev + 1);
-          fetchQuestion();
+          fetchQuestion(child?.age_category);
         }
       } else {
-        fetchQuestion();
+        fetchQuestion(child?.age_category);
       }
     }, correct ? 1800 : 1200);
   };
@@ -115,6 +117,17 @@ export default function GameModule() {
     
     if (question.type === "counting") {
       const { object, count } = question.visual_data;
+      // For large numbers, just show the number not emojis
+      if (count > 20) {
+        return (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-center py-8">
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-6xl">{object}</span>
+              <span className="text-4xl font-bold text-slate-600">× ?</span>
+            </div>
+          </motion.div>
+        );
+      }
       return (
         <div className="flex flex-wrap justify-center gap-3 py-6 max-w-md mx-auto">
           {Array.from({ length: count }).map((_, i) => (
@@ -148,6 +161,20 @@ export default function GameModule() {
     
     if (question.type === "addition" || question.type === "subtraction") {
       const { a, b, object } = question.visual_data;
+      // For large numbers, show numeric visual instead of emojis
+      if (a > 15 || b > 15) {
+        return (
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-center py-8">
+            <div className="flex items-center justify-center gap-4 text-5xl font-bold font-kids">
+              <span className="text-[#0047FF]">{a}</span>
+              <span className={question.type === "addition" ? "text-[#00E676]" : "text-[#FF5252]"}>
+                {question.type === "addition" ? "+" : "−"}
+              </span>
+              <span className="text-[#9B5DE5]">{b}</span>
+            </div>
+          </motion.div>
+        );
+      }
       return (
         <div className="flex items-center justify-center gap-4 py-6 flex-wrap">
           <div className="flex flex-wrap gap-2 max-w-[180px] justify-center">
@@ -164,6 +191,32 @@ export default function GameModule() {
             ))}
           </div>
         </div>
+      );
+    }
+    
+    if (question.type === "multiplication") {
+      const { a, b } = question.visual_data;
+      return (
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-center py-8">
+          <div className="flex items-center justify-center gap-4 text-5xl font-bold font-kids">
+            <span className="text-[#0047FF]">{a}</span>
+            <span className="text-[#FFD500]">×</span>
+            <span className="text-[#9B5DE5]">{b}</span>
+          </div>
+        </motion.div>
+      );
+    }
+    
+    if (question.type === "division") {
+      const { a, b } = question.visual_data;
+      return (
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-center py-8">
+          <div className="flex items-center justify-center gap-4 text-5xl font-bold font-kids">
+            <span className="text-[#0047FF]">{a}</span>
+            <span className="text-[#FF6B9D]">÷</span>
+            <span className="text-[#9B5DE5]">{b}</span>
+          </div>
+        </motion.div>
       );
     }
     
@@ -200,7 +253,7 @@ export default function GameModule() {
             {quizScore >= 8 ? "Amazing! You're a math genius! 🌟" : quizScore >= 5 ? "Great job! Keep practicing! 💪" : "Good try! Let's practice more! 🎯"}
           </p>
           <div className="mt-8 flex flex-col gap-3">
-            <button onClick={() => { setQuizComplete(false); setQuizNum(1); setQuizScore(0); fetchQuestion(); }} className="btn-brutal bg-slate-900 text-white py-3 rounded-xl" data-testid="play-again-button">Play Again</button>
+            <button onClick={() => { setQuizComplete(false); setQuizNum(1); setQuizScore(0); fetchQuestion(child?.age_category); }} className="btn-brutal bg-slate-900 text-white py-3 rounded-xl" data-testid="play-again-button">Play Again</button>
             <button onClick={() => navigate(`/learn/${childId}`)} className="btn-brutal bg-white py-3 rounded-xl" data-testid="back-to-modules-button">Back to Modules</button>
           </div>
         </motion.div>
@@ -240,14 +293,14 @@ export default function GameModule() {
       {module === "addition" && (
         <div className="max-w-4xl mx-auto px-6 pt-6 flex justify-center gap-3">
           <button
-            onClick={() => { setMode("addition"); fetchQuestion(); }}
+            onClick={() => { setMode("addition"); fetchQuestion(child?.age_category); }}
             className={`btn-brutal px-6 py-2 rounded-xl ${mode === "addition" ? "bg-[#00E676]" : "bg-white"}`}
             data-testid="addition-mode-button"
           >
             <Plus size={20} /> Add
           </button>
           <button
-            onClick={() => { setMode("subtraction"); fetchQuestion(); }}
+            onClick={() => { setMode("subtraction"); fetchQuestion(child?.age_category); }}
             className={`btn-brutal px-6 py-2 rounded-xl ${mode === "subtraction" ? "bg-[#FF5252] text-white" : "bg-white"}`}
             data-testid="subtraction-mode-button"
           >
