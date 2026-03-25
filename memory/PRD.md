@@ -57,6 +57,18 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
   - Sparkle effects and star animations
   - Sound effects (fanfare audio)
   - "Awesome! Keep Going!" encouragement button
+- [x] **Complete Encouragement System** (March 25, 2026)
+  - **Progress Indicators**: "Almost There!" progress bars showing proximity to next badges
+  - **Effort-Based Badges (11 new)**:
+    - Brave Learner (20/50/100 attempts)
+    - Never Give Up (continued after 3+ wrong streak)
+    - Mistake Master (reviewed 5/15 mistakes)
+    - Daily Learner (practiced 3/7/30 days)
+  - **Encouraging Popups**: Motivational messages after 3 wrong answers + progress notifications
+  - **Small Wins System**: "Questions today" counter, celebrations at milestones (5, 10, 15, 20)
+  - **Hints & Second Chances**: Contextual hint button for each question
+  - **Learning Journey Stats**: Dashboard showing Questions Tried, Correct Answers, Days Practiced, Mistakes Reviewed
+  - **Effort Tracking**: total_attempts, current_wrong_streak, continued_after_wrong_streak, questions_today
 
 ## Math Curriculum by Age (FIXED - March 25, 2026)
 
@@ -134,7 +146,7 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 ```
 /app/
 ├── backend/
-│   ├── server.py (with gamification endpoints)
+│   ├── server.py (with gamification + encouragement endpoints)
 │   ├── requirements.txt
 │   └── .env
 ├── frontend/
@@ -143,11 +155,14 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 │   │   │   ├── StreakDisplay.jsx (streak visualization)
 │   │   │   ├── MistakeReviewModal.jsx (mistake review UI)
 │   │   │   ├── AchievementBadgesModal.jsx (achievements UI)
+│   │   │   ├── BadgeCelebrationModal.jsx (celebration animations)
+│   │   │   ├── EncouragementPopup.jsx (motivational messages)
+│   │   │   ├── ProgressIndicator.jsx (progress to next badges)
 │   │   │   ├── FullLessonModal.jsx
 │   │   │   └── TimedExamModal.jsx
 │   │   ├── pages/
-│   │   │   ├── LearnPage.jsx (gamification cards)
-│   │   │   ├── GameModule.jsx (mistake recording)
+│   │   │   ├── LearnPage.jsx (gamification + encouragement cards)
+│   │   │   ├── GameModule.jsx (hint system, effort tracking)
 │   │   │   └── Dashboard.jsx
 │   │   └── data/
 │   ├── electron/
@@ -156,13 +171,14 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 └── memory/PRD.md
 ```
 
-## API Endpoints (Gamification)
+## API Endpoints (Gamification + Encouragement)
 - `GET /api/children/{id}/streak` - Get streak data
 - `GET /api/children/{id}/mistakes` - Get recorded mistakes
 - `POST /api/children/{id}/mistakes` - Record a wrong answer
-- `PUT /api/children/{id}/mistakes/{id}/review` - Mark mistake reviewed
+- `PUT /api/children/{id}/mistakes/{id}/review` - Mark mistake reviewed (updates effort_stats.mistakes_reviewed)
 - `DELETE /api/children/{id}/mistakes/{id}` - Delete mistake
-- `GET /api/children/{id}/achievements` - Get earned/locked badges
+- `GET /api/children/{id}/achievements` - Get earned/locked badges + progress_to_next + effort_stats
+- `PUT /api/children/{id}/progress?is_correct=true/false` - Update progress with effort tracking
 
 ## Bug Fixes Applied
 - [x] Stripe "Pay with Card" - Configured user's real keys (March 24)
@@ -186,7 +202,7 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 - [ ] Parent Progress Dashboard (visual charts showing improvement, weak topics, time spent)
 - [ ] Weekly Report Emails (auto-send progress to parents using Resend)
 - [ ] Fun Mini-Games (Speed Race, Math Puzzle, Math Bingo)
-- [ ] Hint System & Adaptive Difficulty
+- [ ] Adaptive Difficulty (adjust questions based on performance)
 - [ ] Switch to Stripe Live mode for production
 - [ ] Add word problems
 - [ ] Backend refactoring (split server.py into route modules)
