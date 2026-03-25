@@ -4,8 +4,9 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import Confetti from "react-confetti";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Plus, Minus, X, Divide } from "lucide-react";
+import { ArrowLeft, Star, Plus, Minus, X, Divide, Lightbulb, HelpCircle } from "lucide-react";
 import BadgeCelebrationModal from "../components/BadgeCelebrationModal";
+import EncouragementPopup, { EncouragementMascot } from "../components/EncouragementPopup";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -39,6 +40,17 @@ export default function GameModule() {
   const [quizComplete, setQuizComplete] = useState(false);
   const [newBadge, setNewBadge] = useState(null); // For badge celebration
   const [existingBadges, setExistingBadges] = useState([]); // Track existing badges
+  
+  // Encouragement system states
+  const [wrongStreak, setWrongStreak] = useState(0);
+  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [encouragementType, setEncouragementType] = useState("encouragement");
+  const [questionsToday, setQuestionsToday] = useState(0);
+  const [progressData, setProgressData] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [showMascot, setShowMascot] = useState(false);
+  const [mascotMood, setMascotMood] = useState("happy");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,6 +66,12 @@ export default function GameModule() {
       setChild(res.data);
       setStars(res.data.progress?.[`${module === "quiz" ? "quiz" : module}_stars`] || 0);
       setExistingBadges(res.data.progress?.badges || []); // Store existing badges
+      
+      // Get effort stats
+      const effortStats = res.data.effort_stats || {};
+      setQuestionsToday(effortStats.questions_today || 0);
+      setWrongStreak(effortStats.current_wrong_streak || 0);
+      
       if (!res.data.subscription_active) {
         navigate("/dashboard");
         return;
@@ -86,17 +104,60 @@ export default function GameModule() {
     const correct = answer === question.correct_answer;
     setIsCorrect(correct);
     
+    // Update questions today count
+    setQuestionsToday(prev => prev + 1);
+    
     if (correct) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2500);
+      setWrongStreak(0); // Reset wrong streak
+      setHintUsed(false); // Reset hint for next question
+      setShowHint(false);
+      
+      // Show mascot with happy mood
+      setMascotMood("celebrating");
+      setShowMascot(true);
+      setTimeout(() => setShowMascot(false), 2000);
       
       if (module === "quiz") {
         setQuizScore(prev => prev + 1);
       }
       
       try {
-        const response = await axios.put(`${API}/children/${childId}/progress?module=${module === "quiz" ? "quiz" : module}&stars=1`);
+        const response = await axios.put(`${API}/children/${childId}/progress?module=${module === "quiz" ? "quiz" : module}&stars=1&is_correct=true`);
         setStars(prev => prev + 1);
+        
+        // Update effort stats from response
+        const effortStats = response.data.effort_stats || {};
+        const newQuestionsToday = effortStats.questions_today || questionsToday + 1;
+        setQuestionsToday(newQuestionsToday);
+        
+        // Check for small wins (5, 10, 15, 20 questions milestones)
+        if ([5, 10, 15, 20].includes(newQuestionsToday)) {
+          setTimeout(() => {
+            setEncouragementType("small_win");
+            setShowEncouragement(true);
+          }, 2000);
+        }
+        
+        // Check for progress towards next badge
+        const nextBadgeProgress = response.data.next_badge_progress || {};
+        const progressKeys = Object.keys(nextBadgeProgress);
+        if (progressKeys.length > 0) {
+          const firstProgress = nextBadgeProgress[progressKeys[0]];
+          if (firstProgress.remaining <= 3 && firstProgress.remaining > 0) {
+            setTimeout(() => {
+              setProgressData({
+                badge: progressKeys[0],
+                name: progressKeys[0].replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+                ...firstProgress,
+                percentage: Math.round((firstProgress.current / firstProgress.target) * 100)
+              });
+              setEncouragementType("progress");
+              setShowEncouragement(true);
+            }, 2500);
+          }
+        }
         
         // Check for new badges
         const newBadges = response.data.progress?.badges || [];
@@ -113,6 +174,19 @@ export default function GameModule() {
         console.error(e);
       }
     } else {
+      // Wrong answer - update wrong streak and show encouragement if needed
+      const newWrongStreak = wrongStreak + 1;
+      setWrongStreak(newWrongStreak);
+      setHintUsed(false);
+      setShowHint(false);
+      
+      // Track wrong answer for effort stats (for Never Give Up badge)
+      try {
+        await axios.put(`${API}/children/${childId}/progress?module=${module === "quiz" ? "quiz" : module}&stars=0&is_correct=false`);
+      } catch (e) {
+        console.error(e);
+      }
+      
       // Record mistake for review later
       try {
         await axios.post(`${API}/children/${childId}/mistakes`, {
@@ -127,6 +201,16 @@ export default function GameModule() {
       } catch (e) {
         console.error("Failed to record mistake:", e);
       }
+      
+      // Show encouragement after 3 wrong answers in a row
+      if (newWrongStreak >= 3 && newWrongStreak % 3 === 0) {
+        setMascotMood("encouraging");
+        setShowMascot(true);
+        setTimeout(() => {
+          setEncouragementType("encouragement");
+          setShowEncouragement(true);
+        }, 1000);
+      }
     }
 
     setTimeout(() => {
@@ -140,7 +224,46 @@ export default function GameModule() {
       } else {
         fetchQuestion(child?.age_category);
       }
+      setSelected(null);
+      setIsCorrect(null);
     }, correct ? 1800 : 1200);
+  };
+
+  // Generate hint based on question type
+  const getHint = () => {
+    if (!question) return "";
+    
+    const correctAnswer = question.correct_answer;
+    const questionType = question.type;
+    
+    if (questionType === "counting") {
+      return "Try counting each item one by one! Point to each one as you count.";
+    }
+    if (questionType === "addition" || questionType === "subtraction") {
+      // Give a partial hint
+      const firstDigit = String(correctAnswer)[0];
+      return `The answer starts with ${firstDigit}... Think carefully!`;
+    }
+    if (questionType === "multiplication") {
+      return "Remember: multiplication is like adding the same number multiple times!";
+    }
+    if (questionType === "division") {
+      return "Think: how many times does one number fit into the other?";
+    }
+    if (questionType === "shapes") {
+      return "Look at the shape carefully. Count the sides or look at the curves!";
+    }
+    if (questionType === "fractions") {
+      return "Imagine cutting something into equal pieces. How many pieces do you have?";
+    }
+    if (questionType === "algebra") {
+      return "Work backwards: what number makes both sides equal?";
+    }
+    
+    // Default hint - eliminate one wrong option
+    const wrongOptions = question.options.filter(o => o !== correctAnswer);
+    const eliminatedOption = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+    return `Hint: The answer is NOT ${eliminatedOption}`;
   };
 
   const renderVisual = () => {
@@ -387,6 +510,42 @@ export default function GameModule() {
           
           {renderVisual()}
 
+          {/* Hint Button */}
+          {!hintUsed && selected === null && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-center mb-4"
+            >
+              <button
+                onClick={() => {
+                  setShowHint(true);
+                  setHintUsed(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-white rounded-full font-semibold hover:from-amber-500 hover:to-yellow-600 transition-all shadow-md"
+                data-testid="hint-button"
+              >
+                <Lightbulb size={18} />
+                Need a hint?
+              </button>
+            </motion.div>
+          )}
+
+          {/* Hint Display */}
+          {showHint && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-xl text-center"
+              data-testid="hint-display"
+            >
+              <div className="flex items-center justify-center gap-2 text-amber-700 font-semibold">
+                <Lightbulb size={20} className="text-amber-500" />
+                <span>{getHint()}</span>
+              </div>
+            </motion.div>
+          )}
+
           {/* Answer Options */}
           <div className="grid grid-cols-2 gap-4 mt-6">
             {question?.options.map((option, index) => (
@@ -423,8 +582,32 @@ export default function GameModule() {
               {isCorrect ? "Amazing! ⭐" : "Try again! 💪"}
             </motion.div>
           )}
+
+          {/* Questions Today Counter */}
+          <div className="mt-4 text-center text-sm text-slate-500">
+            Questions today: <span className="font-bold text-slate-700">{questionsToday}</span>
+          </div>
         </motion.div>
       </main>
+
+      {/* Encouragement Popup */}
+      {showEncouragement && (
+        <EncouragementPopup
+          type={encouragementType}
+          wrongStreak={wrongStreak}
+          questionsToday={questionsToday}
+          progressData={progressData}
+          onClose={() => {
+            setShowEncouragement(false);
+            setShowMascot(false);
+          }}
+        />
+      )}
+
+      {/* Mascot */}
+      {showMascot && !showEncouragement && (
+        <EncouragementMascot mood={mascotMood} />
+      )}
 
       {/* Badge Celebration Modal */}
       {newBadge && (

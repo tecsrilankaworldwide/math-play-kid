@@ -222,6 +222,21 @@ async def create_child(data: ChildCreate, user = Depends(get_current_user)):
             "last_practice_date": None,
             "streak_history": []
         },
+        "effort_stats": {
+            "total_attempts": 0,
+            "total_correct": 0,
+            "total_wrong": 0,
+            "current_wrong_streak": 0,
+            "max_wrong_streak": 0,
+            "continued_after_wrong_streak": 0,
+            "questions_today": 0,
+            "last_question_date": None,
+            "mistakes_reviewed": 0,
+            "login_days": 0,
+            "last_login_date": None,
+            "best_day_questions": 0,
+            "improvement_streak": 0
+        },
         "mistakes": [],
         "achievements": [],
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -242,16 +257,65 @@ async def get_child(child_id: str, user = Depends(get_current_user)):
     return child
 
 @api_router.put("/children/{child_id}/progress")
-async def update_child_progress(child_id: str, module: str, stars: int = 1, user = Depends(get_current_user)):
+async def update_child_progress(child_id: str, module: str, stars: int = 1, is_correct: bool = True, user = Depends(get_current_user)):
     child = await db.children.find_one({"id": child_id, "parent_id": user["user_id"]})
     if not child:
         raise HTTPException(status_code=404, detail="Child not found")
     
     progress = child.get("progress", {})
-    module_field = f"{module}_stars"
-    if module_field in progress:
-        progress[module_field] = progress.get(module_field, 0) + stars
-    progress["total_stars"] = progress.get("total_stars", 0) + stars
+    today = datetime.now(timezone.utc).date().isoformat()
+    
+    # Only add stars if correct
+    if is_correct and stars > 0:
+        module_field = f"{module}_stars"
+        if module_field in progress:
+            progress[module_field] = progress.get(module_field, 0) + stars
+        progress["total_stars"] = progress.get("total_stars", 0) + stars
+    
+    # ============ EFFORT STATS TRACKING ============
+    effort_stats = child.get("effort_stats", {
+        "total_attempts": 0,
+        "total_correct": 0,
+        "total_wrong": 0,
+        "current_wrong_streak": 0,
+        "max_wrong_streak": 0,
+        "continued_after_wrong_streak": 0,
+        "questions_today": 0,
+        "last_question_date": None,
+        "mistakes_reviewed": 0,
+        "login_days": 0,
+        "last_login_date": None,
+        "best_day_questions": 0,
+        "improvement_streak": 0
+    })
+    
+    # Update attempt counts
+    effort_stats["total_attempts"] = effort_stats.get("total_attempts", 0) + 1
+    
+    if is_correct:
+        effort_stats["total_correct"] = effort_stats.get("total_correct", 0) + 1
+        # Check if they continued after a wrong streak (persistence!)
+        if effort_stats.get("current_wrong_streak", 0) >= 3:
+            effort_stats["continued_after_wrong_streak"] = effort_stats.get("continued_after_wrong_streak", 0) + 1
+        effort_stats["current_wrong_streak"] = 0
+    else:
+        effort_stats["total_wrong"] = effort_stats.get("total_wrong", 0) + 1
+        effort_stats["current_wrong_streak"] = effort_stats.get("current_wrong_streak", 0) + 1
+        if effort_stats["current_wrong_streak"] > effort_stats.get("max_wrong_streak", 0):
+            effort_stats["max_wrong_streak"] = effort_stats["current_wrong_streak"]
+    
+    # Track daily questions
+    if effort_stats.get("last_question_date") != today:
+        effort_stats["questions_today"] = 1
+        effort_stats["last_question_date"] = today
+        # Track login days
+        effort_stats["login_days"] = effort_stats.get("login_days", 0) + 1
+    else:
+        effort_stats["questions_today"] = effort_stats.get("questions_today", 0) + 1
+    
+    # Update best day record
+    if effort_stats["questions_today"] > effort_stats.get("best_day_questions", 0):
+        effort_stats["best_day_questions"] = effort_stats["questions_today"]
     
     # ============ STREAK TRACKING ============
     streak_data = child.get("streak", {
@@ -261,7 +325,6 @@ async def update_child_progress(child_id: str, module: str, stars: int = 1, user
         "streak_history": []
     })
     
-    today = datetime.now(timezone.utc).date().isoformat()
     last_practice = streak_data.get("last_practice_date")
     
     if last_practice != today:
@@ -297,8 +360,12 @@ async def update_child_progress(child_id: str, module: str, stars: int = 1, user
     # ============ ACHIEVEMENT BADGES ============
     badges = progress.get("badges", [])
     achievements = child.get("achievements", [])
-    total = progress["total_stars"]
+    total = progress.get("total_stars", 0)
     current_streak = streak_data.get("current_streak", 0)
+    total_attempts = effort_stats.get("total_attempts", 0)
+    continued_after_wrong = effort_stats.get("continued_after_wrong_streak", 0)
+    mistakes_reviewed = effort_stats.get("mistakes_reviewed", 0)
+    login_days = effort_stats.get("login_days", 0)
     
     # Star-based badges
     if total >= 1 and "first_star" not in badges:
@@ -334,6 +401,48 @@ async def update_child_progress(child_id: str, module: str, stars: int = 1, user
         badges.append("streak_30")
         achievements.append({"badge": "streak_30", "name": "Monthly Master", "earned_at": datetime.now(timezone.utc).isoformat()})
     
+    # ============ EFFORT-BASED BADGES (NEW!) ============
+    # Brave Learner: Attempted 20 questions (regardless of right/wrong)
+    if total_attempts >= 20 and "brave_learner" not in badges:
+        badges.append("brave_learner")
+        achievements.append({"badge": "brave_learner", "name": "Brave Learner", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if total_attempts >= 50 and "brave_learner_50" not in badges:
+        badges.append("brave_learner_50")
+        achievements.append({"badge": "brave_learner_50", "name": "Super Brave Learner", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if total_attempts >= 100 and "brave_learner_100" not in badges:
+        badges.append("brave_learner_100")
+        achievements.append({"badge": "brave_learner_100", "name": "Fearless Learner", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
+    # Never Give Up: Continued practicing after getting 3+ wrong in a row
+    if continued_after_wrong >= 1 and "never_give_up" not in badges:
+        badges.append("never_give_up")
+        achievements.append({"badge": "never_give_up", "name": "Never Give Up", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if continued_after_wrong >= 5 and "never_give_up_5" not in badges:
+        badges.append("never_give_up_5")
+        achievements.append({"badge": "never_give_up_5", "name": "Persistence Pro", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if continued_after_wrong >= 10 and "never_give_up_10" not in badges:
+        badges.append("never_give_up_10")
+        achievements.append({"badge": "never_give_up_10", "name": "Unstoppable Spirit", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
+    # Mistake Master: Reviewed mistakes
+    if mistakes_reviewed >= 5 and "mistake_master" not in badges:
+        badges.append("mistake_master")
+        achievements.append({"badge": "mistake_master", "name": "Mistake Master", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if mistakes_reviewed >= 15 and "mistake_master_15" not in badges:
+        badges.append("mistake_master_15")
+        achievements.append({"badge": "mistake_master_15", "name": "Learning Champion", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
+    # Daily Learner: Logged in multiple days
+    if login_days >= 3 and "daily_learner" not in badges:
+        badges.append("daily_learner")
+        achievements.append({"badge": "daily_learner", "name": "Daily Learner", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if login_days >= 7 and "daily_learner_7" not in badges:
+        badges.append("daily_learner_7")
+        achievements.append({"badge": "daily_learner_7", "name": "Weekly Regular", "earned_at": datetime.now(timezone.utc).isoformat()})
+    if login_days >= 30 and "daily_learner_30" not in badges:
+        badges.append("daily_learner_30")
+        achievements.append({"badge": "daily_learner_30", "name": "Dedicated Student", "earned_at": datetime.now(timezone.utc).isoformat()})
+    
     progress["badges"] = badges
     
     await db.children.update_one(
@@ -341,14 +450,29 @@ async def update_child_progress(child_id: str, module: str, stars: int = 1, user
         {"$set": {
             "progress": progress, 
             "streak": streak_data,
+            "effort_stats": effort_stats,
             "achievements": achievements
         }}
     )
     
+    # Calculate progress to next badges for encouragement
+    next_badge_progress = {}
+    if total < 5:
+        next_badge_progress["five_stars"] = {"current": total, "target": 5, "remaining": 5 - total}
+    elif total < 10:
+        next_badge_progress["ten_stars"] = {"current": total, "target": 10, "remaining": 10 - total}
+    elif total < 20:
+        next_badge_progress["twenty_stars"] = {"current": total, "target": 20, "remaining": 20 - total}
+    
+    if total_attempts < 20:
+        next_badge_progress["brave_learner"] = {"current": total_attempts, "target": 20, "remaining": 20 - total_attempts}
+    
     return {
         "progress": progress,
         "streak": streak_data,
-        "new_badges": [a for a in achievements if a["earned_at"] == datetime.now(timezone.utc).date().isoformat()]
+        "effort_stats": effort_stats,
+        "new_badges": [a for a in achievements if a["earned_at"].startswith(today)],
+        "next_badge_progress": next_badge_progress
     }
 
 # ============= MISTAKE TRACKING ROUTES =============
@@ -410,15 +534,25 @@ async def mark_mistake_reviewed(child_id: str, mistake_id: str, user = Depends(g
         raise HTTPException(status_code=404, detail="Child not found")
     
     mistakes = child.get("mistakes", [])
+    found = False
     for mistake in mistakes:
         if mistake.get("id") == mistake_id:
             mistake["reviewed"] = True
             mistake["review_count"] = mistake.get("review_count", 0) + 1
             mistake["last_reviewed_at"] = datetime.now(timezone.utc).isoformat()
+            found = True
             break
     
-    await db.children.update_one({"id": child_id}, {"$set": {"mistakes": mistakes}})
-    return {"message": "Mistake marked as reviewed"}
+    # Update effort_stats for Mistake Master badge
+    effort_stats = child.get("effort_stats", {})
+    if found:
+        effort_stats["mistakes_reviewed"] = effort_stats.get("mistakes_reviewed", 0) + 1
+    
+    await db.children.update_one(
+        {"id": child_id}, 
+        {"$set": {"mistakes": mistakes, "effort_stats": effort_stats}}
+    )
+    return {"message": "Mistake marked as reviewed", "total_reviewed": effort_stats.get("mistakes_reviewed", 0)}
 
 @api_router.delete("/children/{child_id}/mistakes/{mistake_id}")
 async def delete_mistake(child_id: str, mistake_id: str, user = Depends(get_current_user)):
@@ -470,19 +604,38 @@ async def get_achievements(child_id: str, user = Depends(get_current_user)):
     
     achievements = child.get("achievements", [])
     badges = child.get("progress", {}).get("badges", [])
+    effort_stats = child.get("effort_stats", {})
     
     # Define all available badges with metadata
     all_badges = {
+        # Star-based badges
         "first_star": {"name": "First Star", "icon": "⭐", "description": "Earned your first star!", "category": "stars"},
         "five_stars": {"name": "5 Stars", "icon": "🌟", "description": "Earned 5 stars!", "category": "stars"},
         "ten_stars": {"name": "10 Stars", "icon": "✨", "description": "Earned 10 stars!", "category": "stars"},
         "twenty_stars": {"name": "20 Stars", "icon": "💫", "description": "Earned 20 stars!", "category": "stars"},
         "fifty_stars": {"name": "50 Stars", "icon": "🎖️", "description": "Earned 50 stars!", "category": "stars"},
         "century": {"name": "Century Club", "icon": "🏆", "description": "Earned 100 stars!", "category": "stars"},
+        
+        # Streak-based badges
         "streak_3": {"name": "3-Day Streak", "icon": "🔥", "description": "Practiced 3 days in a row!", "category": "streaks"},
         "streak_7": {"name": "Week Warrior", "icon": "🔥", "description": "Practiced 7 days in a row!", "category": "streaks"},
         "streak_14": {"name": "2-Week Champion", "icon": "🔥", "description": "Practiced 14 days in a row!", "category": "streaks"},
         "streak_30": {"name": "Monthly Master", "icon": "👑", "description": "Practiced 30 days in a row!", "category": "streaks"},
+        
+        # Effort-based badges (NEW!)
+        "brave_learner": {"name": "Brave Learner", "icon": "🦁", "description": "Attempted 20 questions! Keep trying!", "category": "effort"},
+        "brave_learner_50": {"name": "Super Brave Learner", "icon": "🦁", "description": "Attempted 50 questions! Amazing effort!", "category": "effort"},
+        "brave_learner_100": {"name": "Fearless Learner", "icon": "🦸", "description": "Attempted 100 questions! You're fearless!", "category": "effort"},
+        "never_give_up": {"name": "Never Give Up", "icon": "💪", "description": "Kept trying after mistakes! Great spirit!", "category": "effort"},
+        "never_give_up_5": {"name": "Persistence Pro", "icon": "💪", "description": "Kept going 5 times after tough moments!", "category": "effort"},
+        "never_give_up_10": {"name": "Unstoppable Spirit", "icon": "🚀", "description": "Nothing can stop you! 10x resilience!", "category": "effort"},
+        "mistake_master": {"name": "Mistake Master", "icon": "🔄", "description": "Reviewed 5 mistakes - learning from errors!", "category": "effort"},
+        "mistake_master_15": {"name": "Learning Champion", "icon": "🏅", "description": "Reviewed 15 mistakes - true learner!", "category": "effort"},
+        "daily_learner": {"name": "Daily Learner", "icon": "📚", "description": "Practiced on 3 different days!", "category": "effort"},
+        "daily_learner_7": {"name": "Weekly Regular", "icon": "📅", "description": "Practiced on 7 different days!", "category": "effort"},
+        "daily_learner_30": {"name": "Dedicated Student", "icon": "🎓", "description": "Practiced on 30 different days!", "category": "effort"},
+        
+        # Special badges
         "speed_demon": {"name": "Speed Demon", "icon": "⚡", "description": "Answered 5 questions under 5 seconds each!", "category": "special"},
         "perfect_quiz": {"name": "Perfect Quiz", "icon": "💯", "description": "Got 10/10 on a quiz!", "category": "special"},
         "math_explorer": {"name": "Math Explorer", "icon": "🧭", "description": "Tried all math modules!", "category": "special"},
@@ -498,11 +651,68 @@ async def get_achievements(child_id: str, user = Depends(get_current_user)):
         else:
             locked_badges.append({**badge_info, "id": badge_id, "earned": False})
     
+    # Calculate progress towards next badges for encouragement
+    total_stars = child.get("progress", {}).get("total_stars", 0)
+    total_attempts = effort_stats.get("total_attempts", 0)
+    mistakes_reviewed = effort_stats.get("mistakes_reviewed", 0)
+    login_days = effort_stats.get("login_days", 0)
+    
+    progress_to_next = []
+    
+    # Star progress
+    star_milestones = [(5, "five_stars", "5 Stars"), (10, "ten_stars", "10 Stars"), (20, "twenty_stars", "20 Stars")]
+    for target, badge_id, name in star_milestones:
+        if badge_id not in badges and total_stars < target:
+            progress_to_next.append({
+                "badge": badge_id,
+                "name": name,
+                "current": total_stars,
+                "target": target,
+                "remaining": target - total_stars,
+                "percentage": round((total_stars / target) * 100)
+            })
+            break
+    
+    # Attempt progress (Brave Learner)
+    if "brave_learner" not in badges and total_attempts < 20:
+        progress_to_next.append({
+            "badge": "brave_learner",
+            "name": "Brave Learner",
+            "current": total_attempts,
+            "target": 20,
+            "remaining": 20 - total_attempts,
+            "percentage": round((total_attempts / 20) * 100)
+        })
+    
+    # Mistake review progress
+    if "mistake_master" not in badges and mistakes_reviewed < 5:
+        progress_to_next.append({
+            "badge": "mistake_master",
+            "name": "Mistake Master",
+            "current": mistakes_reviewed,
+            "target": 5,
+            "remaining": 5 - mistakes_reviewed,
+            "percentage": round((mistakes_reviewed / 5) * 100)
+        })
+    
+    # Login days progress
+    if "daily_learner" not in badges and login_days < 3:
+        progress_to_next.append({
+            "badge": "daily_learner",
+            "name": "Daily Learner",
+            "current": login_days,
+            "target": 3,
+            "remaining": 3 - login_days,
+            "percentage": round((login_days / 3) * 100)
+        })
+    
     return {
         "earned": earned_badges,
         "locked": locked_badges,
         "total_earned": len(earned_badges),
-        "total_available": len(all_badges)
+        "total_available": len(all_badges),
+        "effort_stats": effort_stats,
+        "progress_to_next": progress_to_next
     }
 
 # ============= PRICING ROUTES =============

@@ -3,12 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap, Flame, AlertCircle } from "lucide-react";
+import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play, Clock, Zap, Flame, AlertCircle, Target } from "lucide-react";
 import FullLessonModal from "../components/FullLessonModal";
 import TimedExamModal from "../components/TimedExamModal";
 import MistakeReviewModal from "../components/MistakeReviewModal";
 import AchievementBadgesModal from "../components/AchievementBadgesModal";
 import StreakDisplay from "../components/StreakDisplay";
+import ProgressIndicator from "../components/ProgressIndicator";
 import { getLessonById } from "../data/fullLessons";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -62,6 +63,8 @@ export default function LearnPage() {
   const [showMistakeReview, setShowMistakeReview] = useState(false); // For mistake review
   const [showAchievements, setShowAchievements] = useState(false); // For achievements
   const [mistakeCount, setMistakeCount] = useState(0); // Count of unreviewed mistakes
+  const [progressToNext, setProgressToNext] = useState([]); // Progress towards next badges
+  const [effortStats, setEffortStats] = useState(null); // Effort tracking stats
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -86,6 +89,15 @@ export default function LearnPage() {
         setMistakeCount(mistakesRes.data.unreviewed_count || 0);
       } catch (e) {
         // Ignore if mistakes endpoint fails
+      }
+      
+      // Fetch achievements and progress to next badges
+      try {
+        const achievementsRes = await axios.get(`${API}/children/${childId}/achievements`);
+        setProgressToNext(achievementsRes.data.progress_to_next || []);
+        setEffortStats(achievementsRes.data.effort_stats || null);
+      } catch (e) {
+        // Ignore if achievements endpoint fails
       }
       
       // Check subscription - allow free lessons
@@ -257,6 +269,45 @@ export default function LearnPage() {
             </div>
           </motion.button>
         </div>
+
+        {/* Progress to Next Badges */}
+        {progressToNext && progressToNext.length > 0 && (
+          <div className="mb-10">
+            <ProgressIndicator progressList={progressToNext} />
+          </div>
+        )}
+
+        {/* Effort Stats Summary */}
+        {effortStats && effortStats.total_attempts > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-10 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-5 border-2 border-blue-200"
+          >
+            <h3 className="text-lg font-bold text-slate-900 font-kids mb-3 flex items-center gap-2">
+              <Target className="text-blue-500" size={24} />
+              Your Learning Journey
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <div className="text-2xl font-bold text-blue-600">{effortStats.total_attempts || 0}</div>
+                <div className="text-xs text-slate-500">Questions Tried</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <div className="text-2xl font-bold text-green-600">{effortStats.total_correct || 0}</div>
+                <div className="text-xs text-slate-500">Correct Answers</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <div className="text-2xl font-bold text-purple-600">{effortStats.login_days || 0}</div>
+                <div className="text-xs text-slate-500">Days Practiced</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+                <div className="text-2xl font-bold text-orange-600">{effortStats.mistakes_reviewed || 0}</div>
+                <div className="text-xs text-slate-500">Mistakes Reviewed</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Practice Modules */}
         <div className="mb-12">

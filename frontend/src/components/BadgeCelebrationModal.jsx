@@ -5,16 +5,34 @@ import { Trophy, Sparkles, Star, Flame, Zap, Award } from "lucide-react";
 
 // Badge metadata with icons and colors
 const BADGE_DATA = {
+  // Star badges
   first_star: { name: "First Star", icon: "⭐", color: "from-yellow-400 to-amber-500", message: "You earned your first star!" },
   five_stars: { name: "5 Stars", icon: "🌟", color: "from-yellow-400 to-orange-500", message: "5 stars! You're shining bright!" },
   ten_stars: { name: "10 Stars", icon: "✨", color: "from-amber-400 to-yellow-500", message: "10 stars! Amazing progress!" },
   twenty_stars: { name: "20 Stars", icon: "💫", color: "from-orange-400 to-red-500", message: "20 stars! You're a superstar!" },
   fifty_stars: { name: "50 Stars", icon: "🎖️", color: "from-purple-500 to-pink-500", message: "50 stars! Incredible achievement!" },
   century: { name: "Century Club", icon: "🏆", color: "from-yellow-500 to-amber-600", message: "100 STARS! You're a LEGEND!" },
+  
+  // Streak badges
   streak_3: { name: "3-Day Streak", icon: "🔥", color: "from-orange-500 to-red-500", message: "3 days in a row! Keep it up!" },
   streak_7: { name: "Week Warrior", icon: "🔥", color: "from-red-500 to-orange-600", message: "A whole week! You're unstoppable!" },
   streak_14: { name: "2-Week Champion", icon: "🔥", color: "from-red-600 to-pink-600", message: "2 weeks! Champion status!" },
   streak_30: { name: "Monthly Master", icon: "👑", color: "from-purple-600 to-indigo-600", message: "30 DAYS! You're a MASTER!" },
+  
+  // Effort badges (NEW!)
+  brave_learner: { name: "Brave Learner", icon: "🦁", color: "from-orange-500 to-yellow-500", message: "20 questions tried! So brave!" },
+  brave_learner_50: { name: "Super Brave Learner", icon: "🦁", color: "from-orange-600 to-amber-500", message: "50 questions! Super effort!" },
+  brave_learner_100: { name: "Fearless Learner", icon: "🦸", color: "from-red-500 to-orange-500", message: "100 questions! Fearless!" },
+  never_give_up: { name: "Never Give Up", icon: "💪", color: "from-green-500 to-emerald-500", message: "You kept trying! Amazing spirit!" },
+  never_give_up_5: { name: "Persistence Pro", icon: "💪", color: "from-green-600 to-teal-500", message: "5x comeback! You never quit!" },
+  never_give_up_10: { name: "Unstoppable Spirit", icon: "🚀", color: "from-purple-500 to-indigo-500", message: "Nothing stops you! Legendary!" },
+  mistake_master: { name: "Mistake Master", icon: "🔄", color: "from-purple-500 to-indigo-500", message: "Learning from mistakes! Smart!" },
+  mistake_master_15: { name: "Learning Champion", icon: "🏅", color: "from-indigo-500 to-purple-500", message: "15 reviews! True learner!" },
+  daily_learner: { name: "Daily Learner", icon: "📚", color: "from-blue-500 to-cyan-500", message: "3 days of learning! Great habit!" },
+  daily_learner_7: { name: "Weekly Regular", icon: "📅", color: "from-cyan-500 to-blue-500", message: "7 days! Building great habits!" },
+  daily_learner_30: { name: "Dedicated Student", icon: "🎓", color: "from-indigo-600 to-blue-600", message: "30 days! Truly dedicated!" },
+  
+  // Special badges
   speed_demon: { name: "Speed Demon", icon: "⚡", color: "from-blue-500 to-cyan-500", message: "Lightning fast! Amazing speed!" },
   perfect_quiz: { name: "Perfect Quiz", icon: "💯", color: "from-green-500 to-emerald-500", message: "PERFECT SCORE! Genius!" },
   math_explorer: { name: "Math Explorer", icon: "🧭", color: "from-teal-500 to-blue-500", message: "You've explored all modules!" },
