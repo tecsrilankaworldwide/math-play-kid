@@ -69,6 +69,16 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
   - **Hints & Second Chances**: Contextual hint button for each question
   - **Learning Journey Stats**: Dashboard showing Questions Tried, Correct Answers, Days Practiced, Mistakes Reviewed
   - **Effort Tracking**: total_attempts, current_wrong_streak, continued_after_wrong_streak, questions_today
+- [x] **Leaderboard System** (March 25, 2026)
+  - Age-based leaderboards (9 categories from Ages 5-6 to Age 14)
+  - Score formula: stars×3 + streak×2 + badges×5 + attempts×0.1
+  - "Your Ranking" section showing user's children with ranks
+  - Top 3 with crown/medal styling (👑🥈🥉)
+  - "YOU" badge for current user's entries
+  - Privacy protection (other users show as "X***")
+  - Category selector dropdown to switch age groups
+  - Participant count display
+  - Global leaderboard endpoint for top 20 across all ages
 
 ## Math Curriculum by Age (FIXED - March 25, 2026)
 
@@ -179,6 +189,8 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 - `DELETE /api/children/{id}/mistakes/{id}` - Delete mistake
 - `GET /api/children/{id}/achievements` - Get earned/locked badges + progress_to_next + effort_stats
 - `PUT /api/children/{id}/progress?is_correct=true/false` - Update progress with effort tracking
+- `GET /api/leaderboard/{age_category}` - Get leaderboard for specific age (top 50)
+- `GET /api/leaderboard/global/top` - Get global top 20 across all ages
 
 ## Bug Fixes Applied
 - [x] Stripe "Pay with Card" - Configured user's real keys (March 24)
