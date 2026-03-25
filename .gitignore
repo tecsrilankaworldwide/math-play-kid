@@ -80,3 +80,8 @@ agenthub/agents/youtube/db
 android-sdk/ frontend/node_modules/electron/dist/electron
 frontend/node_modules/electron/dist/electron
 frontend/node_modules/.cache/default-development/16.pack
+frontend/node_modules/.cache/default-development/8.pack
+
+# Environment files with secrets
+backend/.env
+frontend/.env
