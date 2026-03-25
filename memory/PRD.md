@@ -79,6 +79,15 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
   - Category selector dropdown to switch age groups
   - Participant count display
   - Global leaderboard endpoint for top 20 across all ages
+- [x] **Parent Progress Dashboard** (March 25, 2026)
+  - Summary cards: Accuracy %, Current Streak, Badges Earned, Questions Today
+  - Performance by Module bar chart (color-coded by module)
+  - Progress Over Time area chart with milestone annotations
+  - Daily Activity 14-day calendar (green=practiced, gray=missed)
+  - Areas Needing Attention with weak topics and "X new" badges
+  - Recent Achievements timeline with badge icons and dates
+  - Learning Summary stats (Total Questions, Correct, Longest Streak, Mistakes Reviewed)
+  - Purple chart icon button on Dashboard child cards for quick access
 
 ## Math Curriculum by Age (FIXED - March 25, 2026)
 
@@ -191,6 +200,7 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 - `PUT /api/children/{id}/progress?is_correct=true/false` - Update progress with effort tracking
 - `GET /api/leaderboard/{age_category}` - Get leaderboard for specific age (top 50)
 - `GET /api/leaderboard/global/top` - Get global top 20 across all ages
+- `GET /api/children/{id}/analytics` - Parent Progress Dashboard data (module_performance, weak_topics, daily_activity, achievements, progress_timeline)
 
 ## Bug Fixes Applied
 - [x] Stripe "Pay with Card" - Configured user's real keys (March 24)
@@ -211,7 +221,6 @@ Subscription-based web platform for teaching math to kids (ages 5-14) with tiere
 | 14 | $9 | $27 |
 
 ## Future Enhancements
-- [ ] Parent Progress Dashboard (visual charts showing improvement, weak topics, time spent)
 - [ ] Weekly Report Emails (auto-send progress to parents using Resend)
 - [ ] Fun Mini-Games (Speed Race, Math Puzzle, Math Bingo)
 - [ ] Adaptive Difficulty (adjust questions based on performance)

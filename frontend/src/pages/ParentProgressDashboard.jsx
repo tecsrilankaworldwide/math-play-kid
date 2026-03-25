@@ -93,7 +93,7 @@ export default function ParentProgressDashboard() {
           
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900 font-kids">{child.name}'s Progress</h1>
-            <p className="text-sm text-slate-500">Age {child.age} • {child.age_category?.replace("age_", "").replace("_", "-")}</p>
+            <p className="text-sm text-slate-500">Age {child.age}</p>
           </div>
           
           <div className="flex items-center gap-2">
