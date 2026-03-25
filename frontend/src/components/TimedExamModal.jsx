@@ -253,6 +253,7 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
     const q = questions[currentQ];
     const timeWarning = questionTimeLeft <= 10;
     const timeCritical = questionTimeLeft <= 5;
+    const elapsedTime = Math.round((Date.now() - questionStartTime) / 1000);
     
     return (
       <div className="fixed inset-0 bg-slate-900 flex flex-col z-50">
@@ -274,9 +275,15 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {/* Elapsed stopwatch for current question */}
+            <div className="flex items-center gap-2 bg-blue-600 px-3 py-1 rounded-lg">
+              <Zap size={16} className="text-white" />
+              <span className="text-white font-mono font-bold">{elapsedTime}s</span>
+            </div>
+            {/* Countdown timer */}
             <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${timeCritical ? 'bg-red-500 animate-pulse' : timeWarning ? 'bg-yellow-500' : 'bg-slate-700'}`}>
               <Clock size={16} className="text-white" />
-              <span className="text-white font-mono font-bold">{questionTimeLeft}s</span>
+              <span className="text-white font-mono font-bold">{questionTimeLeft}s left</span>
             </div>
             <div className="flex items-center gap-2 bg-slate-700 px-3 py-1 rounded-lg">
               <span className="text-slate-300 text-sm">Total:</span>
@@ -337,9 +344,14 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`mt-6 text-center text-xl font-bold ${lastAnswer?.correct ? 'text-green-600' : 'text-red-600'}`}
+                    className={`mt-6 text-center ${lastAnswer?.correct ? 'text-green-600' : 'text-red-600'}`}
                   >
-                    {lastAnswer?.timeout ? "⏰ Time's up!" : lastAnswer?.correct ? "✓ Correct!" : "✗ Wrong!"}
+                    <div className="text-xl font-bold">
+                      {lastAnswer?.timeout ? "⏰ Time's up!" : lastAnswer?.correct ? "✓ Correct!" : "✗ Wrong!"}
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1">
+                      Time taken: {Math.round((Date.now() - questionStartTime) / 1000)}s
+                    </div>
                   </motion.div>
                 )}
               </div>
@@ -354,12 +366,24 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
   if (stage === "results") {
     const results = getResults();
     
+    // Sort questions by time taken to identify slowest ones
+    const questionAnalysis = answers.map((a, i) => ({
+      questionNum: i + 1,
+      question: questions[i]?.q || "",
+      timeTaken: a.time,
+      correct: a.correct,
+      timeout: a.timeout
+    })).sort((a, b) => b.timeTaken - a.timeTaken);
+    
+    const slowestQuestions = questionAnalysis.slice(0, 3);
+    const fastestQuestions = [...questionAnalysis].sort((a, b) => a.timeTaken - b.timeTaken).slice(0, 3);
+    
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border-4 border-slate-900 my-8"
+          className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border-4 border-slate-900 my-8"
         >
           <div className={`p-6 text-white ${results.percentage >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-600' : results.percentage >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-red-500 to-pink-500'}`}>
             <div className="text-center">
@@ -371,7 +395,7 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
             </div>
           </div>
 
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
             {/* Score */}
             <div className="text-center">
               <div className="text-6xl font-bold text-slate-900">{results.percentage}%</div>
@@ -404,6 +428,128 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
               <div className="text-sm text-indigo-600">Speed Rating</div>
             </div>
 
+            {/* ===== DETAILED TIME ANALYSIS ===== */}
+            <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+              <h4 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                <Clock size={20} className="text-slate-600" />
+                ⏱️ Time Analysis (Per Question)
+              </h4>
+              
+              {/* Time breakdown for each question */}
+              <div className="space-y-2 mb-4">
+                {answers.map((a, i) => {
+                  const timeInSec = Math.round(a.time / 1000);
+                  const maxTime = TIME_LIMITS[difficulty].perQuestion;
+                  const percentUsed = Math.min((timeInSec / maxTime) * 100, 100);
+                  const isSlow = timeInSec > maxTime * 0.7;
+                  const isFast = timeInSec < maxTime * 0.3;
+                  
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-8 text-xs font-bold text-slate-500">Q{i + 1}</span>
+                      <div className="flex-1 h-6 bg-slate-200 rounded-full overflow-hidden relative">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentUsed}%` }}
+                          transition={{ delay: i * 0.1, duration: 0.5 }}
+                          className={`h-full rounded-full ${
+                            a.timeout ? 'bg-red-400' :
+                            a.correct ? (isFast ? 'bg-green-400' : isSlow ? 'bg-yellow-400' : 'bg-blue-400') :
+                            'bg-red-400'
+                          }`}
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-700">
+                          {timeInSec}s {a.correct ? '✓' : '✗'} {a.timeout ? '⏰' : ''}
+                        </span>
+                      </div>
+                      <span className={`w-12 text-xs font-bold ${isFast ? 'text-green-600' : isSlow ? 'text-orange-600' : 'text-slate-600'}`}>
+                        {isFast ? '🚀' : isSlow ? '🐢' : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-3 text-xs border-t pt-3">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-400 rounded"></span> Fast</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-400 rounded"></span> Good</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-400 rounded"></span> Slow</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-400 rounded"></span> Wrong/Timeout</span>
+              </div>
+            </div>
+
+            {/* Slowest Questions Analysis */}
+            {slowestQuestions.length > 0 && (
+              <div className="bg-orange-50 rounded-xl p-4 border-2 border-orange-200">
+                <h4 className="font-bold text-orange-800 mb-2">🐢 Slowest Questions (Need Practice)</h4>
+                <div className="space-y-2">
+                  {slowestQuestions.map((q, i) => (
+                    <div key={i} className="bg-white rounded-lg p-2 text-sm flex justify-between items-center">
+                      <span className="text-slate-700 truncate flex-1">Q{q.questionNum}: {q.question.substring(0, 40)}...</span>
+                      <span className={`font-bold ml-2 ${q.correct ? 'text-green-600' : 'text-red-600'}`}>
+                        {Math.round(q.timeTaken / 1000)}s {q.correct ? '✓' : '✗'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fastest Questions */}
+            {fastestQuestions.filter(q => q.correct).length > 0 && (
+              <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+                <h4 className="font-bold text-green-800 mb-2">🚀 Fastest Correct Answers (Great Job!)</h4>
+                <div className="space-y-2">
+                  {fastestQuestions.filter(q => q.correct).slice(0, 3).map((q, i) => (
+                    <div key={i} className="bg-white rounded-lg p-2 text-sm flex justify-between items-center">
+                      <span className="text-slate-700 truncate flex-1">Q{q.questionNum}: {q.question.substring(0, 40)}...</span>
+                      <span className="font-bold text-green-600 ml-2">{Math.round(q.timeTaken / 1000)}s ⚡</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Summary Stats for Parents */}
+            <div className="bg-indigo-50 rounded-xl p-4 border-2 border-indigo-200">
+              <h4 className="font-bold text-indigo-800 mb-2">📊 Summary for Parents</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-slate-500">Total Time:</span>
+                  <span className="font-bold text-slate-800 ml-2">{formatTime(results.totalTime)}</span>
+                </div>
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-slate-500">Avg/Question:</span>
+                  <span className="font-bold text-slate-800 ml-2">{results.avgTime}s</span>
+                </div>
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-slate-500">Target Time:</span>
+                  <span className="font-bold text-slate-800 ml-2">{TIME_LIMITS[difficulty].perQuestion}s/Q</span>
+                </div>
+                <div className="bg-white rounded-lg p-2">
+                  <span className="text-slate-500">Time Status:</span>
+                  <span className={`font-bold ml-2 ${results.avgTime <= TIME_LIMITS[difficulty].perQuestion * 0.5 ? 'text-green-600' : results.avgTime <= TIME_LIMITS[difficulty].perQuestion ? 'text-blue-600' : 'text-orange-600'}`}>
+                    {results.avgTime <= TIME_LIMITS[difficulty].perQuestion * 0.5 ? 'Excellent!' : results.avgTime <= TIME_LIMITS[difficulty].perQuestion ? 'On Track' : 'Needs Work'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Recommendation */}
+              <div className="mt-3 p-2 bg-white rounded-lg">
+                <span className="text-sm text-slate-600">
+                  {results.avgTime > TIME_LIMITS[difficulty].perQuestion ? 
+                    `💡 Recommendation: Practice more to get average below ${TIME_LIMITS[difficulty].perQuestion}s per question.` :
+                    results.percentage < 70 ?
+                    "💡 Recommendation: Speed is good! Focus on accuracy now." :
+                    results.avgTime > TIME_LIMITS[difficulty].perQuestion * 0.5 ?
+                    "💡 Recommendation: Good balance! Try Medium mode for more challenge." :
+                    "💡 Recommendation: Excellent! Ready for harder difficulty level! 🌟"
+                  }
+                </span>
+              </div>
+            </div>
+
             {/* Tips based on performance */}
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
               <h4 className="font-bold text-slate-800 mb-2">💡 Tips to Improve:</h4>
@@ -414,10 +560,13 @@ export default function TimedExamModal({ ageCategory, onClose, childName }) {
                 {results.percentage < 70 && (
                   <li>• Review the lessons before trying again</li>
                 )}
-                {results.avgTime > 40 && (
-                  <li>• Try to recognize patterns faster</li>
+                {results.avgTime > TIME_LIMITS[difficulty].perQuestion * 0.8 && (
+                  <li>• Try to recognize patterns faster - don't calculate everything</li>
                 )}
-                {results.percentage >= 80 && results.avgTime < 20 && (
+                {slowestQuestions[0]?.timeTaken > TIME_LIMITS[difficulty].perQuestion * 1000 && (
+                  <li>• Focus on topics that took longest: {slowestQuestions[0]?.question.split(':')[0] || 'Review'}</li>
+                )}
+                {results.percentage >= 80 && results.avgTime < TIME_LIMITS[difficulty].perQuestion * 0.5 && (
                   <li>• Excellent! Try a harder difficulty!</li>
                 )}
                 {results.percentage >= 90 && (
