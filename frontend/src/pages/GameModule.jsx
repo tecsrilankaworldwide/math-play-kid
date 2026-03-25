@@ -228,6 +228,18 @@ export default function GameModule() {
       );
     }
     
+    // Fractions, Percentages, Algebra, Geometry, Exponents, Square Roots
+    // These advanced topics just display the question prominently
+    if (["fractions", "percentages", "algebra", "geometry", "exponents", "square_roots"].includes(question.type)) {
+      return (
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-center py-6">
+          <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-8 py-4 rounded-2xl shadow-lg">
+            <span className="text-2xl font-bold uppercase tracking-wider">{question.type.replace("_", " ")}</span>
+          </div>
+        </motion.div>
+      );
+    }
+    
     return null;
   };
 

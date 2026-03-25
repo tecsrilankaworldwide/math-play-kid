@@ -415,106 +415,381 @@ async def get_free_lessons(age_category: str):
 
 # ============= QUESTION GENERATOR =============
 def generate_question(module: str, age_category: str):
+    """
+    MATH CURRICULUM BY AGE (Based on educational standards):
+    
+    Age 5-6 (K-1): Counting 1-20, number recognition, basic shapes, addition/subtraction within 10
+    Age 7 (Grade 2): Addition/subtraction within 20, skip counting, basic place value
+    Age 8 (Grade 3): Addition/subtraction within 100, intro multiplication (2,5,10 tables)
+    Age 9 (Grade 4): Multiplication tables 1-10, division basics, multi-digit operations
+    Age 10 (Grade 5): All operations with larger numbers, intro fractions/decimals
+    Age 11 (Grade 6): Fractions, decimals, percentages, ratios, negative numbers
+    Age 12 (Grade 7): Pre-algebra, integers, proportions, basic geometry
+    Age 13 (Grade 8): Algebra basics, linear equations, exponents, square roots
+    Age 14 (Grade 9): Algebra, quadratics intro, functions, advanced geometry
+    """
+    
     objects = ["🍎", "🌟", "🎈", "🐻", "🌸", "🦋", "🍪", "🚗"]
     
-    # Adjust difficulty based on age - MUCH more differentiated
-    difficulty_settings = {
-        "age_5_6": {"max_count": 10, "max_add": 5, "max_mult": 2, "allow_negative": False},
-        "age_7": {"max_count": 15, "max_add": 10, "max_mult": 5, "allow_negative": False},
-        "age_8": {"max_count": 20, "max_add": 15, "max_mult": 6, "allow_negative": False},
-        "age_9": {"max_count": 30, "max_add": 25, "max_mult": 8, "allow_negative": False},
-        "age_10": {"max_count": 50, "max_add": 50, "max_mult": 10, "allow_negative": True},
-        "age_11": {"max_count": 100, "max_add": 100, "max_mult": 12, "allow_negative": True},
-        "age_12": {"max_count": 200, "max_add": 200, "max_mult": 15, "allow_negative": True},
-        "age_13": {"max_count": 500, "max_add": 500, "max_mult": 20, "allow_negative": True},
-        "age_14": {"max_count": 1000, "max_add": 1000, "max_mult": 25, "allow_negative": True},
-    }
-    
-    settings = difficulty_settings.get(age_category, difficulty_settings["age_5_6"])
-    max_count = settings["max_count"]
-    max_add = settings["max_add"]
-    max_mult = settings["max_mult"]
-    allow_negative = settings["allow_negative"]
-    
+    # ==================== COUNTING (Ages 5-7 only) ====================
     if module == "counting":
-        count = random.randint(1, max_count)
+        if age_category == "age_5_6":
+            count = random.randint(1, 10)
+        elif age_category == "age_7":
+            count = random.randint(5, 20)
+        else:
+            count = random.randint(10, 20)
+        
         obj = random.choice(objects)
         options = [str(count)]
         while len(options) < 4:
-            wrong = random.randint(1, max_count + 2)
-            if str(wrong) not in options:
+            wrong = random.randint(max(1, count - 3), count + 3)
+            if str(wrong) not in options and wrong > 0:
                 options.append(str(wrong))
         random.shuffle(options)
         return {"type": "counting", "question": f"How many {obj} do you see?", "options": options, "correct_answer": str(count), "visual_data": {"object": obj, "count": count}}
     
+    # ==================== NUMBER RECOGNITION (Ages 5-7 only) ====================
     elif module == "numbers":
-        number = random.randint(1, max_count)
+        if age_category == "age_5_6":
+            number = random.randint(1, 20)
+        else:
+            number = random.randint(10, 100)
+        
         options = [str(number)]
         while len(options) < 4:
-            wrong = random.randint(1, max_count)
-            if str(wrong) not in options:
+            offset = random.randint(1, 5)
+            wrong = number + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
                 options.append(str(wrong))
         random.shuffle(options)
         return {"type": "numbers", "question": "What number is this?", "options": options, "correct_answer": str(number), "visual_data": {"number": number}}
     
+    # ==================== ADDITION ====================
     elif module == "addition":
-        # Min values increase with age
-        min_val = 1 if age_category in ["age_5_6", "age_7", "age_8"] else 10 if age_category in ["age_9", "age_10"] else 50
-        a = random.randint(min_val, max_add)
-        b = random.randint(min_val, max_add)
+        if age_category == "age_5_6":
+            # Within 10
+            a = random.randint(1, 5)
+            b = random.randint(1, 5)
+        elif age_category == "age_7":
+            # Within 20
+            a = random.randint(1, 10)
+            b = random.randint(1, 10)
+        elif age_category == "age_8":
+            # Within 100
+            a = random.randint(10, 50)
+            b = random.randint(10, 50)
+        elif age_category == "age_9":
+            # Multi-digit
+            a = random.randint(50, 200)
+            b = random.randint(50, 200)
+        elif age_category == "age_10":
+            # Larger numbers
+            a = random.randint(100, 500)
+            b = random.randint(100, 500)
+        elif age_category == "age_11":
+            # With decimals sometimes
+            a = random.randint(200, 1000)
+            b = random.randint(200, 1000)
+        elif age_category == "age_12":
+            # Negative numbers intro
+            a = random.randint(-50, 500)
+            b = random.randint(100, 500)
+        elif age_category == "age_13":
+            # Integers
+            a = random.randint(-200, 500)
+            b = random.randint(-200, 500)
+        else:  # age_14
+            # Larger integers
+            a = random.randint(-500, 1000)
+            b = random.randint(-500, 1000)
+        
         answer = a + b
         options = [str(answer)]
+        spread = max(5, abs(answer) // 10 + 1)
         while len(options) < 4:
-            # Generate wrong answers close to correct answer
-            offset = random.randint(1, max(5, max_add // 10))
+            offset = random.randint(1, spread)
             wrong = answer + random.choice([-1, 1]) * offset
-            if str(wrong) not in options and wrong > 0:
-                options.append(str(wrong))
-        random.shuffle(options)
-        obj = random.choice(objects)
-        return {"type": "addition", "question": f"{a} + {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
-    
-    elif module == "subtraction":
-        min_val = 5 if age_category in ["age_5_6", "age_7", "age_8"] else 20 if age_category in ["age_9", "age_10"] else 100
-        a = random.randint(min_val, max_add + min_val)
-        b = random.randint(1, a - 1)
-        answer = a - b
-        options = [str(answer)]
-        while len(options) < 4:
-            offset = random.randint(1, max(3, max_add // 10))
-            wrong = answer + random.choice([-1, 1]) * offset
-            if str(wrong) not in options and wrong >= 0:
-                options.append(str(wrong))
-        random.shuffle(options)
-        obj = random.choice(objects)
-        return {"type": "subtraction", "question": f"{a} - {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
-    
-    elif module == "multiplication":
-        a = random.randint(2, max_mult)
-        b = random.randint(2, max_mult)
-        answer = a * b
-        options = [str(answer)]
-        while len(options) < 4:
-            wrong = random.randint(max(4, answer - 10), answer + 15)
-            if str(wrong) not in options and wrong > 0:
-                options.append(str(wrong))
-        random.shuffle(options)
-        return {"type": "multiplication", "question": f"{a} × {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "operation": "multiply"}}
-    
-    elif module == "division":
-        b = random.randint(2, max(3, max_mult // 2))
-        answer = random.randint(2, max(5, max_mult // 2))
-        a = b * answer  # Ensure clean division
-        options = [str(answer)]
-        while len(options) < 4:
-            wrong = random.randint(1, answer + 5)
             if str(wrong) not in options:
                 options.append(str(wrong))
         random.shuffle(options)
+        
+        obj = random.choice(objects) if age_category in ["age_5_6", "age_7", "age_8"] else None
+        sign_a = "" if a >= 0 else ""
+        sign_b = "+" if b >= 0 else ""
+        question_text = f"{a} + {b} = ?" if b >= 0 else f"{a} + ({b}) = ?"
+        
+        return {"type": "addition", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
+    
+    # ==================== SUBTRACTION ====================
+    elif module == "subtraction":
+        if age_category == "age_5_6":
+            a = random.randint(5, 10)
+            b = random.randint(1, a - 1)
+        elif age_category == "age_7":
+            a = random.randint(10, 20)
+            b = random.randint(1, a - 1)
+        elif age_category == "age_8":
+            a = random.randint(30, 100)
+            b = random.randint(10, a - 1)
+        elif age_category == "age_9":
+            a = random.randint(100, 500)
+            b = random.randint(50, a - 1)
+        elif age_category == "age_10":
+            a = random.randint(200, 1000)
+            b = random.randint(100, a - 1)
+        elif age_category == "age_11":
+            a = random.randint(500, 2000)
+            b = random.randint(200, a + 100)  # Can go negative
+        elif age_category in ["age_12", "age_13", "age_14"]:
+            a = random.randint(-200, 1000)
+            b = random.randint(-200, 1000)
+        else:
+            a = random.randint(10, 50)
+            b = random.randint(1, a - 1)
+        
+        answer = a - b
+        options = [str(answer)]
+        spread = max(3, abs(answer) // 10 + 1)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        obj = random.choice(objects) if age_category in ["age_5_6", "age_7", "age_8"] else None
+        question_text = f"{a} - {b} = ?" if b >= 0 else f"{a} - ({b}) = ?"
+        
+        return {"type": "subtraction", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "object": obj}}
+    
+    # ==================== MULTIPLICATION ====================
+    elif module == "multiplication":
+        if age_category == "age_8":
+            # Times tables: 2, 5, 10
+            a = random.choice([2, 5, 10])
+            b = random.randint(1, 10)
+        elif age_category == "age_9":
+            # Times tables: 1-10
+            a = random.randint(2, 10)
+            b = random.randint(2, 10)
+        elif age_category == "age_10":
+            # Times tables: 1-12
+            a = random.randint(2, 12)
+            b = random.randint(2, 12)
+        elif age_category == "age_11":
+            # Larger multiplication
+            a = random.randint(5, 15)
+            b = random.randint(5, 15)
+        elif age_category == "age_12":
+            # Two-digit by single digit
+            a = random.randint(10, 30)
+            b = random.randint(2, 12)
+        elif age_category == "age_13":
+            # Two-digit multiplication
+            a = random.randint(10, 25)
+            b = random.randint(10, 25)
+        else:  # age_14
+            # Challenging multiplication
+            a = random.randint(12, 30)
+            b = random.randint(12, 30)
+        
+        answer = a * b
+        options = [str(answer)]
+        spread = max(5, answer // 10)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "multiplication", "question": f"{a} × {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "operation": "multiply"}}
+    
+    # ==================== DIVISION ====================
+    elif module == "division":
+        if age_category == "age_9":
+            # Basic division (tables 1-10)
+            b = random.randint(2, 10)
+            answer = random.randint(2, 10)
+        elif age_category == "age_10":
+            # Division with tables 1-12
+            b = random.randint(2, 12)
+            answer = random.randint(2, 12)
+        elif age_category == "age_11":
+            # Larger division
+            b = random.randint(3, 15)
+            answer = random.randint(5, 20)
+        elif age_category == "age_12":
+            # More complex
+            b = random.randint(5, 20)
+            answer = random.randint(5, 25)
+        elif age_category == "age_13":
+            # Challenging
+            b = random.randint(6, 25)
+            answer = random.randint(10, 30)
+        else:  # age_14
+            # Advanced
+            b = random.randint(7, 30)
+            answer = random.randint(10, 40)
+        
+        a = b * answer  # Ensure clean division
+        options = [str(answer)]
+        spread = max(3, answer // 5)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
         return {"type": "division", "question": f"{a} ÷ {b} = ?", "options": options, "correct_answer": str(answer), "visual_data": {"a": a, "b": b, "operation": "divide"}}
     
+    # ==================== FRACTIONS (Ages 10+) ====================
+    elif module == "fractions":
+        if age_category in ["age_10", "age_11"]:
+            # Simple fraction addition
+            denom = random.choice([2, 4, 5, 10])
+            num1 = random.randint(1, denom - 1)
+            num2 = random.randint(1, denom - num1)
+            answer_num = num1 + num2
+            question_text = f"{num1}/{denom} + {num2}/{denom} = ?"
+            answer = f"{answer_num}/{denom}"
+            options = [answer]
+            while len(options) < 4:
+                wrong_num = random.randint(1, denom)
+                wrong = f"{wrong_num}/{denom}"
+                if wrong not in options:
+                    options.append(wrong)
+        else:  # age_12, 13, 14
+            # Fraction multiplication or different denominators
+            denom1 = random.choice([2, 3, 4, 5])
+            denom2 = random.choice([2, 3, 4, 5])
+            num1 = random.randint(1, denom1)
+            num2 = random.randint(1, denom2)
+            answer_num = num1 * num2
+            answer_denom = denom1 * denom2
+            question_text = f"{num1}/{denom1} × {num2}/{denom2} = ?"
+            answer = f"{answer_num}/{answer_denom}"
+            options = [answer]
+            while len(options) < 4:
+                wrong_num = random.randint(1, answer_denom)
+                wrong = f"{wrong_num}/{answer_denom}"
+                if wrong not in options:
+                    options.append(wrong)
+        
+        random.shuffle(options)
+        return {"type": "fractions", "question": question_text, "options": options, "correct_answer": answer, "visual_data": {"operation": "fractions"}}
+    
+    # ==================== PERCENTAGES (Ages 11+) ====================
+    elif module == "percentages":
+        if age_category == "age_11":
+            # Simple percentages
+            percent = random.choice([10, 20, 25, 50])
+            whole = random.choice([100, 200, 50, 80])
+        elif age_category == "age_12":
+            percent = random.choice([10, 15, 20, 25, 30, 50])
+            whole = random.randint(50, 200)
+        else:  # age_13, 14
+            percent = random.randint(5, 40)
+            whole = random.randint(50, 500)
+        
+        answer = (percent * whole) // 100
+        question_text = f"What is {percent}% of {whole}?"
+        options = [str(answer)]
+        spread = max(5, answer // 5)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "percentages", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"percent": percent, "whole": whole}}
+    
+    # ==================== ALGEBRA (Ages 12+) ====================
+    elif module == "algebra":
+        if age_category == "age_12":
+            # Simple: x + 5 = 12, find x
+            b = random.randint(2, 10)
+            answer = random.randint(2, 15)
+            result = answer + b
+            question_text = f"x + {b} = {result}. Find x"
+        elif age_category == "age_13":
+            # Medium: 2x + 3 = 15, find x
+            coef = random.randint(2, 5)
+            b = random.randint(1, 10)
+            answer = random.randint(2, 10)
+            result = coef * answer + b
+            question_text = f"{coef}x + {b} = {result}. Find x"
+        else:  # age_14
+            # Harder: 3x - 7 = 2x + 5, find x
+            coef1 = random.randint(2, 6)
+            coef2 = random.randint(1, coef1 - 1)
+            b1 = random.randint(-10, 10)
+            answer = random.randint(2, 15)
+            b2 = coef1 * answer + b1 - coef2 * answer
+            question_text = f"{coef1}x + {b1} = {coef2}x + {b2}. Find x"
+        
+        options = [str(answer)]
+        while len(options) < 4:
+            wrong = answer + random.choice([-3, -2, -1, 1, 2, 3])
+            if str(wrong) not in options:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "algebra", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"operation": "algebra"}}
+    
+    # ==================== EXPONENTS (Ages 13+) ====================
+    elif module == "exponents":
+        if age_category == "age_13":
+            base = random.randint(2, 5)
+            exp = random.randint(2, 3)
+        else:  # age_14
+            base = random.randint(2, 10)
+            exp = random.randint(2, 4)
+        
+        answer = base ** exp
+        question_text = f"{base}^{exp} = ?"
+        options = [str(answer)]
+        spread = max(5, answer // 5)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "exponents", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"base": base, "exp": exp}}
+    
+    # ==================== SQUARE ROOTS (Ages 13+) ====================
+    elif module == "square_roots":
+        if age_category == "age_13":
+            answer = random.choice([2, 3, 4, 5, 6, 7, 8, 9, 10])
+        else:  # age_14
+            answer = random.choice([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+        
+        number = answer * answer
+        question_text = f"√{number} = ?"
+        options = [str(answer)]
+        while len(options) < 4:
+            wrong = answer + random.choice([-2, -1, 1, 2])
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "square_roots", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"number": number}}
+    
+    # ==================== SHAPES (Ages 5-8 only) ====================
     elif module == "shapes":
-        shapes = [{"name": "Circle", "emoji": "🔴"}, {"name": "Square", "emoji": "🟦"}, {"name": "Triangle", "emoji": "🔺"}, {"name": "Star", "emoji": "⭐"}, {"name": "Heart", "emoji": "❤️"}, {"name": "Diamond", "emoji": "🔷"}]
+        shapes = [
+            {"name": "Circle", "emoji": "🔴"}, 
+            {"name": "Square", "emoji": "🟦"}, 
+            {"name": "Triangle", "emoji": "🔺"}, 
+            {"name": "Star", "emoji": "⭐"}, 
+            {"name": "Heart", "emoji": "❤️"}, 
+            {"name": "Diamond", "emoji": "🔷"}
+        ]
         shape = random.choice(shapes)
         options = [shape["name"]]
         other = [s["name"] for s in shapes if s["name"] != shape["name"]]
@@ -522,18 +797,61 @@ def generate_question(module: str, age_category: str):
         random.shuffle(options)
         return {"type": "shapes", "question": "What shape is this?", "options": options, "correct_answer": shape["name"], "visual_data": {"shape": shape["name"], "emoji": shape["emoji"]}}
     
+    # ==================== GEOMETRY (Ages 12+) ====================
+    elif module == "geometry":
+        problem_type = random.choice(["area_rectangle", "area_triangle", "perimeter"])
+        
+        if problem_type == "area_rectangle":
+            length = random.randint(5, 20)
+            width = random.randint(3, 15)
+            answer = length * width
+            question_text = f"Area of rectangle: length={length}, width={width}"
+        elif problem_type == "area_triangle":
+            base = random.randint(4, 16)
+            height = random.randint(4, 16)
+            answer = (base * height) // 2
+            question_text = f"Area of triangle: base={base}, height={height}"
+        else:  # perimeter
+            length = random.randint(5, 20)
+            width = random.randint(3, 15)
+            answer = 2 * (length + width)
+            question_text = f"Perimeter of rectangle: length={length}, width={width}"
+        
+        options = [str(answer)]
+        spread = max(5, answer // 5)
+        while len(options) < 4:
+            offset = random.randint(1, spread)
+            wrong = answer + random.choice([-1, 1]) * offset
+            if str(wrong) not in options and wrong > 0:
+                options.append(str(wrong))
+        random.shuffle(options)
+        
+        return {"type": "geometry", "question": question_text, "options": options, "correct_answer": str(answer), "visual_data": {"problem_type": problem_type}}
+    
     return None
 
 @api_router.get("/question/{module}")
 async def get_question(module: str, age_category: str = "age_5_6"):
     if module == "quiz":
-        # Different quiz modules based on age
-        if age_category in ["age_5_6", "age_7"]:
+        # Age-appropriate quiz modules based on curriculum
+        if age_category == "age_5_6":
             module = random.choice(["counting", "numbers", "addition", "shapes"])
-        elif age_category in ["age_8", "age_9"]:
-            module = random.choice(["addition", "subtraction", "shapes", "multiplication"])
-        else:  # age_10 to age_14
+        elif age_category == "age_7":
+            module = random.choice(["counting", "addition", "subtraction", "shapes"])
+        elif age_category == "age_8":
+            module = random.choice(["addition", "subtraction", "multiplication", "shapes"])
+        elif age_category == "age_9":
             module = random.choice(["addition", "subtraction", "multiplication", "division"])
+        elif age_category == "age_10":
+            module = random.choice(["addition", "subtraction", "multiplication", "division", "fractions"])
+        elif age_category == "age_11":
+            module = random.choice(["multiplication", "division", "fractions", "percentages"])
+        elif age_category == "age_12":
+            module = random.choice(["multiplication", "division", "percentages", "algebra", "geometry"])
+        elif age_category == "age_13":
+            module = random.choice(["algebra", "exponents", "square_roots", "geometry"])
+        else:  # age_14
+            module = random.choice(["algebra", "exponents", "square_roots", "geometry"])
     
     question = generate_question(module, age_category)
     if not question:

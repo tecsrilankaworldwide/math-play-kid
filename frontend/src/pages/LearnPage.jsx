@@ -8,18 +8,37 @@ import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play }
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const BASE_MODULES = [
-  { id: "counting", name: "Counting", icon: Sparkles, color: "#FFD500", desc: "Learn to count objects", minAge: 5 },
-  { id: "numbers", name: "Numbers", icon: Hash, color: "#0047FF", desc: "Recognize numbers", minAge: 5 },
-  { id: "addition", name: "Add & Subtract", icon: Plus, color: "#00E676", desc: "Basic math operations", minAge: 5 },
-  { id: "shapes", name: "Shapes", icon: Shapes, color: "#FF6B9D", desc: "Learn shapes", minAge: 5 },
-  { id: "multiplication", name: "Multiply", icon: Sparkles, color: "#F78C6B", desc: "Multiplication tables", minAge: 8 },
-  { id: "division", name: "Divide", icon: Hash, color: "#00BCD4", desc: "Division practice", minAge: 10 },
-  { id: "quiz", name: "Quiz Time!", icon: Trophy, color: "#9B5DE5", desc: "Test your skills", minAge: 5 },
+  // Ages 5-7: Basic concepts
+  { id: "counting", name: "Counting", icon: Sparkles, color: "#FFD500", desc: "Count objects", minAge: 5, maxAge: 7 },
+  { id: "numbers", name: "Numbers", icon: Hash, color: "#0047FF", desc: "Number recognition", minAge: 5, maxAge: 7 },
+  { id: "shapes", name: "Shapes", icon: Shapes, color: "#FF6B9D", desc: "Learn shapes", minAge: 5, maxAge: 8 },
+  
+  // All ages: Core arithmetic
+  { id: "addition", name: "Add & Subtract", icon: Plus, color: "#00E676", desc: "Addition & Subtraction", minAge: 5, maxAge: 99 },
+  
+  // Ages 8+: Multiplication & Division
+  { id: "multiplication", name: "Multiply", icon: Sparkles, color: "#F78C6B", desc: "Times tables", minAge: 8, maxAge: 99 },
+  { id: "division", name: "Divide", icon: Hash, color: "#00BCD4", desc: "Division practice", minAge: 9, maxAge: 99 },
+  
+  // Ages 10+: Fractions & Percentages
+  { id: "fractions", name: "Fractions", icon: Shapes, color: "#9B5DE5", desc: "Fraction operations", minAge: 10, maxAge: 99 },
+  { id: "percentages", name: "Percentages", icon: Hash, color: "#E91E63", desc: "Calculate percentages", minAge: 11, maxAge: 99 },
+  
+  // Ages 12+: Pre-Algebra & Geometry
+  { id: "algebra", name: "Algebra", icon: Plus, color: "#3F51B5", desc: "Solve for x", minAge: 12, maxAge: 99 },
+  { id: "geometry", name: "Geometry", icon: Shapes, color: "#009688", desc: "Area & perimeter", minAge: 12, maxAge: 99 },
+  
+  // Ages 13+: Advanced
+  { id: "exponents", name: "Exponents", icon: Sparkles, color: "#FF5722", desc: "Powers & exponents", minAge: 13, maxAge: 99 },
+  { id: "square_roots", name: "Square Roots", icon: Hash, color: "#795548", desc: "Calculate roots", minAge: 13, maxAge: 99 },
+  
+  // Quiz for all
+  { id: "quiz", name: "Quiz Time!", icon: Trophy, color: "#9B5DE5", desc: "Test your skills", minAge: 5, maxAge: 99 },
 ];
 
 // Filter modules based on child's age
 const getModulesForAge = (age) => {
-  return BASE_MODULES.filter(m => age >= m.minAge);
+  return BASE_MODULES.filter(m => age >= m.minAge && age <= m.maxAge);
 };
 
 const LESSON_COLORS = ["#FFD500", "#00E676", "#0047FF", "#FF6B9D", "#9B5DE5", "#F78C6B"];
