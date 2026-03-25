@@ -340,8 +340,9 @@ async def check_payment_status(session_id: str, user = Depends(get_current_user)
 async def stripe_webhook(request: Request):
     body = await request.body()
     api_key = os.environ.get("STRIPE_API_KEY")
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
     host_url = str(request.base_url).rstrip("/")
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=f"{host_url}/api/webhook/stripe")
+    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=f"{host_url}/api/webhook/stripe", webhook_secret=webhook_secret)
     
     try:
         webhook_response = await stripe_checkout.handle_webhook(body, request.headers.get("Stripe-Signature"))
