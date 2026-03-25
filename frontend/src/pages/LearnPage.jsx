@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { ArrowLeft, Star, Sparkles, Hash, Plus, Shapes, Trophy, BookOpen, Play } from "lucide-react";
-import MiniLessonModal from "../components/MiniLessonModal";
-import { getLessonForAge } from "../data/miniLessons";
+import FullLessonModal from "../components/FullLessonModal";
+import { getLessonById } from "../data/fullLessons";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -152,7 +152,7 @@ export default function LearnPage() {
           <h3 className="text-2xl font-bold text-slate-900 font-kids mb-4">Practice Games</h3>
           <div className="grid md:grid-cols-3 gap-6">
             {getModulesForAge(child?.age || 5).map((module, i) => {
-              const miniLesson = getLessonForAge(module.id, child?.age || 5);
+              const fullLesson = getLessonById(module.id);
               
               return (
               <motion.div
@@ -180,11 +180,11 @@ export default function LearnPage() {
 
                 {/* Action Buttons */}
                 <div className="mt-4 flex gap-2">
-                  {miniLesson && module.id !== "quiz" && (
+                  {fullLesson && module.id !== "quiz" && (
                     <button
                       onClick={() => {
                         setSelectedModule(module.id);
-                        setShowLesson(miniLesson);
+                        setShowLesson(fullLesson);
                       }}
                       className="flex-1 bg-white/90 hover:bg-white text-slate-900 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1 border-2 border-slate-900 transition-colors"
                       data-testid={`module-${module.id}-learn-button`}
@@ -266,9 +266,9 @@ export default function LearnPage() {
         </motion.div>
       </main>
 
-      {/* Mini Lesson Modal */}
+      {/* Full Lesson Modal */}
       {showLesson && (
-        <MiniLessonModal
+        <FullLessonModal
           lesson={showLesson}
           onClose={() => setShowLesson(null)}
           onStartPractice={() => {
